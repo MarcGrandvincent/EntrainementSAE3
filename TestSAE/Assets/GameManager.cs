@@ -22,7 +22,7 @@ public class GameManager : MonoBehaviour
 
     public List<List<GameObject>> Tiles = new List<List<GameObject>>();
     private List<GameObject> PlayableCharacters = new List<GameObject>();
-    private List<GameObject> SelectionTiles = new List<GameObject>();
+    private List<List<GameObject>> SelectionTiles = new List<List<GameObject>>();
 
     public GameObject TilePrefab;
     public GameObject PlayableCharacterPreFab;
@@ -34,6 +34,10 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < YSize; i++)
         {
             Tiles.Add(new List<GameObject>());
+        }
+        for (int i = 0; i < YSize; i++)
+        {
+            SelectionTiles.Add(new List<GameObject>());
         }
         SetUpTiles();
         SetUpPlayer();
@@ -77,15 +81,97 @@ public class GameManager : MonoBehaviour
 
                 for (int i = 0; i < movement; i++)
                 {
-                    GameObject SelectedTile = Instantiate(SelectionTile);
-                    SelectedTile.transform.position = new Vector3(xposition, yposition + i + 1, -1);
-                    for (int y = 3; y > i; y--)
+
+
+                    // Colonne Haut 
+                    if (xposition <= XSize - 1 && xposition >= 0 && yposition + i + 1 <= YSize - 1 && yposition + i + 1 >= 0)
                     {
-                        GameObject SelectedTile1 = Instantiate(SelectionTile);
-                        SelectedTile1.transform.position = new Vector3(xposition + y - 1, yposition + i + 1, -1);
+                        if (Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().HasPlayer)
+                        {
+                            GameObject SelectedTile = Instantiate(SelectionTile);
+                            SelectedTile.transform.position = new Vector3(xposition, yposition + i + 1, -1);
+                        }
+                    }
+
+                    // Côté Haut
+                    for (int j = 0; j < movement - 1 - i; j++)
+                    {
+                        if (xposition + j + 1 <= XSize - 1 && xposition + j + 1 >= 0 && yposition + i + 1 <= YSize - 1 && yposition + i + 1 >= 0)
+                        {
+                            if (Tiles[xposition + j + 1][yposition + i + 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition + i + 1].GetComponent<TileScript>().HasPlayer)
+                            {
+                                GameObject SelectedTile2 = Instantiate(SelectionTile);
+                                SelectedTile2.transform.position = new Vector3(xposition + j + 1, yposition + i + 1, -1);
+                            }
+                        }
+                        
+                        if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition + i + 1 <= YSize && yposition + i + 1 >= 0)
+                        {
+                            if (Tiles[xposition - j - 1][yposition + i + 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition + i + 1].GetComponent<TileScript>().HasPlayer)
+                            {
+                                GameObject SelectedTile3 = Instantiate(SelectionTile);
+                                SelectedTile3.transform.position = new Vector3(xposition - j - 1, yposition + i + 1, -1);
+                            }
+                        }
+
+                    }
+
+                    // Vertical droite 
+                    if (xposition + i + 1 <= XSize - 1 && xposition + i + 1 >= 0 && yposition <= YSize -1 && yposition >= 0)
+                    {
+                        if (Tiles[xposition + i + 1][yposition].GetComponent<TileScript>().CanWalk && !Tiles[xposition + i + 1][yposition].GetComponent<TileScript>().HasPlayer)
+                        {
+                            GameObject SelectedTile4 = Instantiate(SelectionTile);
+                            SelectedTile4.transform.position = new Vector3(xposition + i + 1, yposition, -1);
+                        }
+                    }
+
+                    // Vertical gauche
+                    if (xposition - i - 1 <= XSize - 1 && xposition - i - 1 <= 0 && yposition <= YSize - 1 && yposition >= 0)
+                    {
+                        if (Tiles[xposition - i - 1][yposition].GetComponent<TileScript>().CanWalk && !Tiles[xposition - i - 1][yposition].GetComponent<TileScript>().HasPlayer)
+                        {
+                            GameObject SelectedTile5 = Instantiate(SelectionTile);
+                            SelectedTile5.transform.position = new Vector3(xposition - i - 1, yposition, -1);
+                        }
+
+                    }
+
+                    // Colonne bas
+
+                    if (xposition <= XSize - 1 && xposition >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
+                    {
+                        if (Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
+                        {
+                            GameObject SelectedTile6 = Instantiate(SelectionTile);
+                            SelectedTile6.transform.position = new Vector3(xposition, yposition - i - 1, -1);
+                        }
+                    }
+
+
+                    // Côté, bas
+                    for (int j = 0; j < movement - 1 - i; j++)
+                    {
+                        if (xposition + j + 1 <= XSize - 1 && xposition + j + 1 >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
+                        {
+                            if (Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
+                            {
+                                GameObject SelectedTile7 = Instantiate(SelectionTile);
+                                SelectedTile7.transform.position = new Vector3(xposition + j + 1, yposition - i - 1, -1);
+                            }
+                        }
+
+                        if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
+                        {
+                            if (Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
+                            {
+                                GameObject SelectedTile8 = Instantiate(SelectionTile);
+                                SelectedTile8.transform.position = new Vector3(xposition - j - 1, yposition - i - 1, -1);
+                            }
+                        }
+
                     }
                 }
-
                 gameState = GameState.Waiting;
 
                 /*
@@ -112,7 +198,7 @@ public class GameManager : MonoBehaviour
                 tile.name = "Tile " + x + " " + y;
                 tile.transform.position = new Vector2(x, y);
                 int c = Random.Range(1, 100);
-                if (c <= 5)
+                if (c <= -1)
                 {
                     tile.GetComponent<TileScript>().ChangeType(Type.TREE);
                 }
