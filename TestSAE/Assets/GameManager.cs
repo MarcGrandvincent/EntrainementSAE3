@@ -4,6 +4,7 @@ using System.Globalization;
 using UnityEditor;
 using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.UIElements;
 
 public class GameManager : MonoBehaviour
 {
@@ -81,83 +82,82 @@ public class GameManager : MonoBehaviour
 
                 for (int i = 0; i < movement; i++)
                 {
-
-
-                    // Colonne Haut 
+                    // Vertical
                     if (xposition <= XSize - 1 && xposition >= 0 && yposition + i + 1 <= YSize - 1 && yposition + i + 1 >= 0)
                     {
                         if (Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().HasPlayer)
                         {
                             GameObject SelectedTile = Instantiate(SelectionTile);
-                            SelectedTile.transform.position = new Vector3(xposition, yposition + i + 1, -1);
-                        }
-                    }
-
-                    // Côté Haut
-                    for (int j = 0; j < movement - 1 - i; j++)
-                    {
-                        if (xposition + j + 1 <= XSize - 1 && xposition + j + 1 >= 0 && yposition + i + 1 <= YSize - 1 && yposition + i + 1 >= 0)
-                        {
-                            if (Tiles[xposition + j + 1][yposition + i + 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition + i + 1].GetComponent<TileScript>().HasPlayer)
-                            {
-                                GameObject SelectedTile2 = Instantiate(SelectionTile);
-                                SelectedTile2.transform.position = new Vector3(xposition + j + 1, yposition + i + 1, -1);
-                            }
-                        }
-                        
-                        if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition + i + 1 <= YSize && yposition + i + 1 >= 0)
-                        {
-                            if (Tiles[xposition - j - 1][yposition + i + 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition + i + 1].GetComponent<TileScript>().HasPlayer)
-                            {
-                                GameObject SelectedTile3 = Instantiate(SelectionTile);
-                                SelectedTile3.transform.position = new Vector3(xposition - j - 1, yposition + i + 1, -1);
-                            }
+                            SelectedTile.transform.position = new Vector3(xposition, yposition + i + 1, -2);
+                            SelectedTile.name = "SelectionTile " + xposition + " " + (yposition + i + 1);
+                            SelectedTile.GetComponent<SelectionTileScript>().X = xposition;
+                            SelectedTile.GetComponent<SelectionTileScript>().Y = yposition + i + 1;
+                            SelectionTiles.Add(SelectedTile);
+                            
                         }
 
                     }
-
-                    // Vertical droite 
-                    if (xposition + i + 1 <= XSize - 1 && xposition + i + 1 >= 0 && yposition <= YSize -1 && yposition >= 0)
-                    {
-                        if (Tiles[xposition + i + 1][yposition].GetComponent<TileScript>().CanWalk && !Tiles[xposition + i + 1][yposition].GetComponent<TileScript>().HasPlayer)
-                        {
-                            GameObject SelectedTile4 = Instantiate(SelectionTile);
-                            SelectedTile4.transform.position = new Vector3(xposition + i + 1, yposition, -1);
-                        }
-                    }
-
-                    // Vertical gauche
-                    if (xposition - i - 1 <= XSize - 1 && xposition - i - 1 <= 0 && yposition <= YSize - 1 && yposition >= 0)
-                    {
-                        if (Tiles[xposition - i - 1][yposition].GetComponent<TileScript>().CanWalk && !Tiles[xposition - i - 1][yposition].GetComponent<TileScript>().HasPlayer)
-                        {
-                            GameObject SelectedTile5 = Instantiate(SelectionTile);
-                            SelectedTile5.transform.position = new Vector3(xposition - i - 1, yposition, -1);
-                        }
-
-                    }
-
-                    // Colonne bas
 
                     if (xposition <= XSize - 1 && xposition >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
                     {
                         if (Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
                         {
-                            GameObject SelectedTile6 = Instantiate(SelectionTile);
-                            SelectedTile6.transform.position = new Vector3(xposition, yposition - i - 1, -1);
+                            GameObject SelectedTile2 = Instantiate(SelectionTile);
+                            SelectedTile2.transform.position = new Vector3(xposition, yposition - i - 1, -2);
+                            SelectedTile2.name = "SelectionTile " + xposition + " " + (yposition - i - 1);
+                            SelectedTile2.GetComponent<SelectionTileScript>().X = xposition;
+                            SelectedTile2.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
+                            SelectionTiles.Add(SelectedTile2);
+
                         }
+
                     }
 
 
-                    // Côté, bas
-                    for (int j = 0; j < movement - 1 - i; j++)
+                    //Horizontal Haut
+                    for (int j = 0; j < movement - i; j++)
+                    {
+                        if (xposition + j + 1 <= XSize - 1 && xposition + j + 1 >= 0 && yposition + i <= YSize - 1 && yposition + i >= 0)
+                        {
+                            if (Tiles[xposition + j + 1][yposition + i].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition + i].GetComponent<TileScript>().HasPlayer)
+                            {
+                                GameObject SelectedTile3 = Instantiate(SelectionTile);
+                                SelectedTile3.transform.position = new Vector3(xposition + j + 1, yposition + i, -2);
+                                SelectedTile3.name = "SelectionTile " + (xposition + j + 1) + " " + (yposition + i);
+                                SelectedTile3.GetComponent<SelectionTileScript>().X = xposition + j + 1;
+                                SelectedTile3.GetComponent<SelectionTileScript>().Y = yposition + i;
+                                SelectionTiles.Add(SelectedTile3);
+                            }
+                        }
+
+                        if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition + i <= YSize - 1 && yposition + i >= 0)
+                        {
+                            if (Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().HasPlayer)
+                            {
+                                GameObject SelectedTile4 = Instantiate(SelectionTile);
+                                SelectedTile4.transform.position = new Vector3(xposition - j - 1, yposition + i, -2);
+                                SelectedTile4.name = "SelectionTile " + (xposition - j - 1) + " " + (yposition + i);
+                                SelectedTile4.GetComponent<SelectionTileScript>().X = xposition - j - 1;
+                                SelectedTile4.GetComponent<SelectionTileScript>().Y = yposition + i;
+                                SelectionTiles.Add(SelectedTile4);
+                            }
+                        }
+
+                    }
+
+                    // Horizontal Bas
+                    for (int j = 0; j < movement - i - 1; j++)
                     {
                         if (xposition + j + 1 <= XSize - 1 && xposition + j + 1 >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
                         {
                             if (Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
                             {
-                                GameObject SelectedTile7 = Instantiate(SelectionTile);
-                                SelectedTile7.transform.position = new Vector3(xposition + j + 1, yposition - i - 1, -1);
+                                GameObject SelectedTile5 = Instantiate(SelectionTile);
+                                SelectedTile5.transform.position = new Vector3(xposition + j + 1, yposition - i - 1, -2);
+                                SelectedTile5.name = "SelectionTile " + (xposition + j + 1) + " " + (yposition - i - 1);
+                                SelectedTile5.GetComponent<SelectionTileScript>().X = xposition + j + 1;
+                                SelectedTile5.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
+                                SelectionTiles.Add(SelectedTile5);
                             }
                         }
 
@@ -165,22 +165,59 @@ public class GameManager : MonoBehaviour
                         {
                             if (Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
                             {
-                                GameObject SelectedTile8 = Instantiate(SelectionTile);
-                                SelectedTile8.transform.position = new Vector3(xposition - j - 1, yposition - i - 1, -1);
+                                GameObject SelectedTile6 = Instantiate(SelectionTile);
+                                SelectedTile6.transform.position = new Vector3(xposition - j - 1, yposition - i - 1, -2);
+                                SelectedTile6.name = "SelectionTile " + (xposition - j - 1) + " " + (yposition - i - 1);
+                                SelectedTile6.GetComponent<SelectionTileScript>().X = xposition - j - 1;
+                                SelectedTile6.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
+                                SelectionTiles.Add(SelectedTile6);
                             }
                         }
 
                     }
                 }
-                gameState = GameState.Waiting;
 
-                /*
-                for (int y = 0; y < i; y++)
+                // On rï¿½cupï¿½re les voisins
+                foreach(GameObject currentTile in SelectionTiles)
                 {
-                    GameObject SelectedTile1 = Instantiate(SelectionTile);
-                    SelectedTile1.transform.position = new Vector3(xposition + y + 1, yposition + i + 1, -1);
+                    foreach(GameObject tile in SelectionTiles)
+                    {
+                        if (tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X + 1 &&
+                            tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y ||
+                            tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y + 1 &&
+                            tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X ||
+                            tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X - 1 &&
+                            tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y ||
+                            tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y - 1 &&
+                            tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X)
+                        {
+                            currentTile.GetComponent<SelectionTileScript>().AddVoisins(tile);
+                        }
+                    }
                 }
-                */
+
+
+                foreach (GameObject gameObject in SelectionTiles)
+                {
+                    string s = "";
+
+                    foreach(GameObject tiles in gameObject.GetComponent<SelectionTileScript>().Voisins)
+                    {
+                        s += " -> " + tiles.name + " \n";
+                    }
+                    Debug.Log("Voisins de " + gameObject.name + " :\n" + s);
+
+                }
+
+                // On vï¿½rifie si des cases n'ont pas de voisins
+                foreach (GameObject currentTile in SelectionTiles)
+                {
+                    if (currentTile.GetComponent<SelectionTileScript>().Voisins.Count == 0)
+                    {
+                        Destroy(currentTile);
+                    }
+                }
+                gameState = GameState.Waiting;
             }
         }
     }
@@ -198,7 +235,7 @@ public class GameManager : MonoBehaviour
                 tile.name = "Tile " + x + " " + y;
                 tile.transform.position = new Vector2(x, y);
                 int c = Random.Range(1, 100);
-                if (c <= -1)
+                if (c <= 10)
                 {
                     tile.GetComponent<TileScript>().ChangeType(Type.TREE);
                 }
@@ -234,9 +271,14 @@ public class GameManager : MonoBehaviour
                     Playable.GetComponent<PlayableCharacterScript>().Y = yposition;
                     valide = true;
                 }
-
             }
         }
+        GameObject Playable2 = Instantiate(PlayableCharacterPreFab);
+        Playable2.transform.position = new Vector3(XSize/2, YSize/2, -1);
+        Playable2.GetComponent<PlayableCharacterScript>().X = XSize/2;
+        Playable2.GetComponent<PlayableCharacterScript>().Y = YSize/2;
+        PlayableCharacters.Add(Playable2);
+        Playable2.name = "Playable " + 4;
     }
 
     private void SetUpEnemy()
