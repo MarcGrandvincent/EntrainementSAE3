@@ -13,6 +13,11 @@ public class SelectionTileScript : MonoBehaviour
     private List<GameObject> voisins = new List<GameObject>();
     public List<GameObject> Voisins { get => voisins; }
 
+    private bool isNotActionnable = false;
+
+    private bool isOver;
+    public bool IsOver { get => isOver; }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -25,12 +30,29 @@ public class SelectionTileScript : MonoBehaviour
     }
     private void OnMouseEnter()
     {
-       gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 0.5f);
+        if (!isNotActionnable)
+        {
+            gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 0.5f);
+        }
     }
 
     private void OnMouseExit()
     {
-       gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 1f);
+        if (!isNotActionnable)
+        {
+            gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 1f);
+            isOver = false;
+        }
+
+    }
+
+    private void OnMouseOver()
+    {
+        if (!isNotActionnable)
+        {
+            isOver = true;
+        }
+
     }
 
     public void AddVoisins(GameObject SelectionTile)
@@ -41,5 +63,32 @@ public class SelectionTileScript : MonoBehaviour
     public void RemoveVoisins(GameObject SelectionTile)
     {
         voisins.Remove(SelectionTile);
+    }
+
+    public void IsPath()
+    {
+        if (!isNotActionnable)
+        {
+            gameObject.GetComponent<Renderer>().material.color = new Color(1f, 0f, 0f, gameObject.GetComponent<Renderer>().material.color.a);
+        }
+    }
+
+    public void IsNotPath()
+    {
+        if (!isNotActionnable)
+        {
+            gameObject.GetComponent<Renderer>().material.color = new Color(1f, 1f, 1f, gameObject.GetComponent<Renderer>().material.color.a);
+        }
+
+    }
+
+    public void IsNotActionnable()
+    {
+        isNotActionnable = true;
+    }
+
+    public bool Actionnable()
+    {
+        return isNotActionnable;
     }
 }

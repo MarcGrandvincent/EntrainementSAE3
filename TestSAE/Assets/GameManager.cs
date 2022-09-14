@@ -15,6 +15,7 @@ public class GameManager : MonoBehaviour
 
 
     private GameObject SelectedPlayable = null;
+    private GameObject OveringTile = null;
 
     public int XSize;
     public int YSize;
@@ -23,7 +24,9 @@ public class GameManager : MonoBehaviour
 
     public List<List<GameObject>> Tiles = new List<List<GameObject>>();
     private List<GameObject> PlayableCharacters = new List<GameObject>();
-    private List<List<GameObject>> SelectionTiles = new List<List<GameObject>>();
+    private List<GameObject> SelectionTiles = new List<GameObject>();
+    private Dictionary<GameObject, int> distances = new Dictionary<GameObject, int>();
+
 
     public GameObject TilePrefab;
     public GameObject PlayableCharacterPreFab;
@@ -35,10 +38,6 @@ public class GameManager : MonoBehaviour
         for (int i = 0; i < YSize; i++)
         {
             Tiles.Add(new List<GameObject>());
-        }
-        for (int i = 0; i < YSize; i++)
-        {
-            SelectionTiles.Add(new List<GameObject>());
         }
         SetUpTiles();
         SetUpPlayer();
@@ -79,6 +78,15 @@ public class GameManager : MonoBehaviour
                 int xposition = SelectedPlayable.GetComponent<PlayableCharacterScript>().X;
                 int yposition = SelectedPlayable.GetComponent<PlayableCharacterScript>().Y;
                 int movement = SelectedPlayable.GetComponent<PlayableCharacterScript>().Movement;
+
+                // We create the point 0
+                GameObject DefaultSelectedTile = Instantiate(SelectionTile);
+                DefaultSelectedTile.transform.position = new Vector2(xposition, yposition);
+                DefaultSelectedTile.name = "SelectionTile " + xposition + " " + yposition;
+                DefaultSelectedTile.GetComponent<SelectionTileScript>().X = xposition;
+                DefaultSelectedTile.GetComponent<SelectionTileScript>().Y = yposition;
+                DefaultSelectedTile.GetComponent<SelectionTileScript>().IsNotActionnable();
+                SelectionTiles.Add(DefaultSelectedTile);
 
                 for (int i = 0; i < movement; i++)
                 {
@@ -128,8 +136,15 @@ public class GameManager : MonoBehaviour
                                 SelectedTile3.GetComponent<SelectionTileScript>().Y = yposition + i;
                                 SelectionTiles.Add(SelectedTile3);
                             }
+                            else
+                            {
+                                j += 1;
+                            }
                         }
+                    }
 
+                    for (int j = 0; j < movement - i; j++)
+                    {
                         if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition + i <= YSize - 1 && yposition + i >= 0)
                         {
                             if (Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().HasPlayer)
@@ -141,8 +156,11 @@ public class GameManager : MonoBehaviour
                                 SelectedTile4.GetComponent<SelectionTileScript>().Y = yposition + i;
                                 SelectionTiles.Add(SelectedTile4);
                             }
+                            else
+                            {
+                                j += 1;
+                            }
                         }
-
                     }
 
                     // Horizontal Bas
@@ -159,8 +177,15 @@ public class GameManager : MonoBehaviour
                                 SelectedTile5.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
                                 SelectionTiles.Add(SelectedTile5);
                             }
+                            else
+                            {
+                                j += 1;
+                            }
                         }
+                    }
 
+                    for (int j = 0; j < movement - i - 1; j++)
+                    {
                         if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
                         {
                             if (Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
@@ -172,12 +197,15 @@ public class GameManager : MonoBehaviour
                                 SelectedTile6.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
                                 SelectionTiles.Add(SelectedTile6);
                             }
+                            else
+                            {
+                                j += 1;
+                            }
                         }
-
                     }
                 }
 
-                // On r�cup�re les voisins
+                // On récupére les voisins
                 foreach(GameObject currentTile in SelectionTiles)
                 {
                     foreach(GameObject tile in SelectionTiles)
@@ -197,27 +225,99 @@ public class GameManager : MonoBehaviour
                 }
 
 
-                foreach (GameObject gameObject in SelectionTiles)
-                {
-                    string s = "";
-
-                    foreach(GameObject tiles in gameObject.GetComponent<SelectionTileScript>().Voisins)
-                    {
-                        s += " -> " + tiles.name + " \n";
-                    }
-                    Debug.Log("Voisins de " + gameObject.name + " :\n" + s);
-
-                }
-
-                // On v�rifie si des cases n'ont pas de voisins
+                // On vérifie si des cases n'ont pas de voisins
                 foreach (GameObject currentTile in SelectionTiles)
                 {
                     if (currentTile.GetComponent<SelectionTileScript>().Voisins.Count == 0)
                     {
+                        SelectionTiles.Remove(currentTile);
                         Destroy(currentTile);
                     }
                 }
                 gameState = GameState.Waiting;
+            }
+
+            if (gameState == GameState.Waiting)
+            {
+                foreach (GameObject currentTile in SelectionTiles)
+                {
+                    if (currentTile.GetComponent<SelectionTileScript>().IsOver && currentTile != OveringTile)
+                    {
+                        OveringTile = currentTile;
+                        
+                        // Initialisation Calcul Distance
+                        List<GameObject> aTraiter = new List<GameObject>();
+                        ResetDistance();
+                        aTraiter.Add(currentTile);
+                        SetDistance(currentTile, 0);
+
+                        while (aTraiter.Count > 0)
+                        {
+                            GameObject tileEnCours = aTraiter[0];
+                            aTraiter.RemoveAt(0);
+
+                            foreach (GameObject t in tileEnCours.GetComponent<SelectionTileScript>().Voisins)
+                            {
+                                if (GetDistance(t) == -1)
+                                {
+                                    SetDistance(t, GetDistance(tileEnCours) + 1);
+                                    aTraiter.Add(t);
+                                }
+                            }
+                        }
+
+
+                        // Initialisation Calcul Chemin
+                        GameObject tileProcessing = null;
+                        foreach (GameObject t in SelectionTiles)
+                        {
+                            if (t.GetComponent<SelectionTileScript>().Actionnable())
+                            {
+                                tileProcessing = t;
+                            }
+                        }
+
+                        List<GameObject> resultat = new List<GameObject>();
+
+                        if (GetDistance(tileProcessing) != 0)
+                        {
+                            while (GetDistance(tileProcessing) > 0)
+                            {
+                                GameObject PreviousTile = null;
+                                foreach (GameObject t in tileProcessing.GetComponent<SelectionTileScript>().Voisins)
+                                {
+                                    if (GetDistance(t) == GetDistance(tileProcessing) - 1)
+                                    {
+                                        PreviousTile = t;
+                                    }
+                                }
+                                resultat.Add(PreviousTile);
+                                tileProcessing = PreviousTile;
+                            }
+                        }
+
+                        string s = "";
+
+                        foreach (GameObject t in resultat)
+                        {
+                            s += t.name + "\n";
+                        }
+
+                        Debug.Log(s);
+
+                        foreach (GameObject t in SelectionTiles)
+                        {
+                            if (resultat.Contains(t))
+                            {
+                                t.GetComponent<SelectionTileScript>().IsPath();
+                            }
+                            else
+                            {
+                                t.GetComponent<SelectionTileScript>().IsNotPath();
+                            }
+                        }
+                    }
+                }
             }
         }
     }
@@ -284,6 +384,28 @@ public class GameManager : MonoBehaviour
     private void SetUpEnemy()
     {
 
+    }
+
+    private void SetDistance(GameObject Tile, int distance)
+    {
+        distances.Add(Tile, distance);
+    }
+
+    private int GetDistance(GameObject Tile)
+    {
+        if (!distances.ContainsKey(Tile))
+        {
+            return -1;
+        }
+        else
+        {
+            return distances[Tile];
+        }
+    }
+
+    private void ResetDistance()
+    {
+        distances.Clear();
     }
 }
 
