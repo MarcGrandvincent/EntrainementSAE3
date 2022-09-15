@@ -1,3 +1,4 @@
+using Newtonsoft.Json.Bson;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
@@ -31,6 +32,7 @@ public class PlayableCharacterScript : MonoBehaviour
     {
     }
 
+
     private void OnMouseEnter()
     {
         if (CanInteract)
@@ -49,6 +51,13 @@ public class PlayableCharacterScript : MonoBehaviour
 
     private void OnMouseUp()
     {
-        hasBeenClicked = true; 
+        hasBeenClicked = true;
+        gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 0.5f);
+    }
+
+    public void IsNotClicked()
+    {
+        hasBeenClicked = false;
+        gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 1);
     }
 }

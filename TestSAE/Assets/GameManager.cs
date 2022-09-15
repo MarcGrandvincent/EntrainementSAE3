@@ -5,6 +5,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.UIElements;
+using static UnityEngine.Networking.UnityWebRequest;
 
 public class GameManager : MonoBehaviour
 {
@@ -16,6 +17,8 @@ public class GameManager : MonoBehaviour
 
     private GameObject SelectedPlayable = null;
     private GameObject OveringTile = null;
+    private bool isOvering = false;
+    private bool hasBeenClear = true;
 
     public int XSize;
     public int YSize;
@@ -81,16 +84,16 @@ public class GameManager : MonoBehaviour
 
                 // We create the point 0
                 GameObject DefaultSelectedTile = Instantiate(SelectionTile);
-                DefaultSelectedTile.transform.position = new Vector2(xposition, yposition);
+                DefaultSelectedTile.transform.position = new Vector3(xposition, yposition,0);
                 DefaultSelectedTile.name = "SelectionTile " + xposition + " " + yposition;
                 DefaultSelectedTile.GetComponent<SelectionTileScript>().X = xposition;
                 DefaultSelectedTile.GetComponent<SelectionTileScript>().Y = yposition;
                 DefaultSelectedTile.GetComponent<SelectionTileScript>().IsNotActionnable();
                 SelectionTiles.Add(DefaultSelectedTile);
 
+
                 for (int i = 0; i < movement; i++)
                 {
-                    // Vertical
                     if (xposition <= XSize - 1 && xposition >= 0 && yposition + i + 1 <= YSize - 1 && yposition + i + 1 >= 0)
                     {
                         if (Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().HasPlayer)
@@ -101,11 +104,19 @@ public class GameManager : MonoBehaviour
                             SelectedTile.GetComponent<SelectionTileScript>().X = xposition;
                             SelectedTile.GetComponent<SelectionTileScript>().Y = yposition + i + 1;
                             SelectionTiles.Add(SelectedTile);
-                            
+
+                        }
+                        else
+                        {
+                            i += 1;
                         }
 
                     }
+                }
 
+
+                for (int i = 0; i < movement; i++)
+                {
                     if (xposition <= XSize - 1 && xposition >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
                     {
                         if (Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
@@ -118,10 +129,17 @@ public class GameManager : MonoBehaviour
                             SelectionTiles.Add(SelectedTile2);
 
                         }
+                        else
+                        {
+                            i += 1;
+                        }
 
                     }
+                }
 
 
+                for (int i = 0; i < movement; i++)
+                {
                     //Horizontal Haut
                     for (int j = 0; j < movement - i; j++)
                     {
@@ -224,100 +242,147 @@ public class GameManager : MonoBehaviour
                     }
                 }
 
+                List<GameObject> tileToDestroy = new List<GameObject>();
 
                 // On vérifie si des cases n'ont pas de voisins
                 foreach (GameObject currentTile in SelectionTiles)
                 {
                     if (currentTile.GetComponent<SelectionTileScript>().Voisins.Count == 0)
                     {
-                        SelectionTiles.Remove(currentTile);
-                        Destroy(currentTile);
+                        tileToDestroy.Add(currentTile);
                     }
                 }
+
+                // On vérifie si des cases ne sont pas jumelles et seuls
+                foreach (GameObject currentTile in SelectionTiles)
+                {
+                    if (currentTile.GetComponent<SelectionTileScript>().Voisins.Count == 1)
+                    {
+                        if (currentTile.GetComponent<SelectionTileScript>().Voisins[0].GetComponent<SelectionTileScript>().Voisins[0] == currentTile)
+                        {
+                            tileToDestroy.Add(currentTile);
+                        }
+                    }
+                }
+
+                for (int i = 0; i < tileToDestroy.Count; i++)
+                {
+                    SelectionTiles.Remove(tileToDestroy[i]);
+                    Destroy(tileToDestroy[i]);
+                }
+
+                tileToDestroy.Clear();
+
                 gameState = GameState.Waiting;
             }
 
             if (gameState == GameState.Waiting)
             {
+                isOvering = false;
+
                 foreach (GameObject currentTile in SelectionTiles)
                 {
-                    if (currentTile.GetComponent<SelectionTileScript>().IsOver && currentTile != OveringTile)
+                    if (currentTile.GetComponent<SelectionTileScript>().IsOver)
                     {
-                        OveringTile = currentTile;
-                        
-                        // Initialisation Calcul Distance
-                        List<GameObject> aTraiter = new List<GameObject>();
-                        ResetDistance();
-                        aTraiter.Add(currentTile);
-                        SetDistance(currentTile, 0);
-
-                        while (aTraiter.Count > 0)
+                        isOvering = true;
+                        if (currentTile != OveringTile)
                         {
-                            GameObject tileEnCours = aTraiter[0];
-                            aTraiter.RemoveAt(0);
+                            hasBeenClear = false;
+                            OveringTile = currentTile;
 
-                            foreach (GameObject t in tileEnCours.GetComponent<SelectionTileScript>().Voisins)
+                            // Initialisation Calcul Distance
+                            List<GameObject> aTraiter = new List<GameObject>();
+                            ResetDistance();
+                            aTraiter.Add(currentTile);
+                            SetDistance(currentTile, 0);
+
+                            while (aTraiter.Count > 0)
                             {
-                                if (GetDistance(t) == -1)
+                                GameObject tileEnCours = aTraiter[0];
+                                aTraiter.RemoveAt(0);
+
+                                foreach (GameObject t in tileEnCours.GetComponent<SelectionTileScript>().Voisins)
                                 {
-                                    SetDistance(t, GetDistance(tileEnCours) + 1);
-                                    aTraiter.Add(t);
-                                }
-                            }
-                        }
-
-
-                        // Initialisation Calcul Chemin
-                        GameObject tileProcessing = null;
-                        foreach (GameObject t in SelectionTiles)
-                        {
-                            if (t.GetComponent<SelectionTileScript>().Actionnable())
-                            {
-                                tileProcessing = t;
-                            }
-                        }
-
-                        List<GameObject> resultat = new List<GameObject>();
-
-                        if (GetDistance(tileProcessing) != 0)
-                        {
-                            while (GetDistance(tileProcessing) > 0)
-                            {
-                                GameObject PreviousTile = null;
-                                foreach (GameObject t in tileProcessing.GetComponent<SelectionTileScript>().Voisins)
-                                {
-                                    if (GetDistance(t) == GetDistance(tileProcessing) - 1)
+                                    if (GetDistance(t) == -1)
                                     {
-                                        PreviousTile = t;
+                                        SetDistance(t, GetDistance(tileEnCours) + 1);
+                                        aTraiter.Add(t);
                                     }
                                 }
-                                resultat.Add(PreviousTile);
-                                tileProcessing = PreviousTile;
                             }
-                        }
 
-                        string s = "";
 
-                        foreach (GameObject t in resultat)
-                        {
-                            s += t.name + "\n";
-                        }
-
-                        Debug.Log(s);
-
-                        foreach (GameObject t in SelectionTiles)
-                        {
-                            if (resultat.Contains(t))
+                            // Initialisation Calcul Chemin
+                            GameObject tileProcessing = null;
+                            foreach (GameObject t in SelectionTiles)
                             {
-                                t.GetComponent<SelectionTileScript>().IsPath();
+                                if (t.GetComponent<SelectionTileScript>().Actionnable())
+                                {
+                                    tileProcessing = t;
+                                }
                             }
-                            else
+
+                            List<GameObject> resultat = new List<GameObject>();
+
+                            if (GetDistance(tileProcessing) != 0)
                             {
-                                t.GetComponent<SelectionTileScript>().IsNotPath();
+                                while (GetDistance(tileProcessing) > 0)
+                                {
+                                    GameObject PreviousTile = null;
+                                    foreach (GameObject t in tileProcessing.GetComponent<SelectionTileScript>().Voisins)
+                                    {
+                                        if (GetDistance(t) == GetDistance(tileProcessing) - 1)
+                                        {
+                                            PreviousTile = t;
+                                        }
+                                    }
+                                    resultat.Add(PreviousTile);
+                                    tileProcessing = PreviousTile;
+                                }
+                            }
+
+                            foreach (GameObject t in SelectionTiles)
+                            {
+                                if (resultat.Contains(t))
+                                {
+                                    t.GetComponent<SelectionTileScript>().IsPath();
+                                }
+                                else
+                                {
+                                    t.GetComponent<SelectionTileScript>().IsNotPath();
+                                }
                             }
                         }
                     }
                 }
+                if (!isOvering && !hasBeenClear)
+                {
+                    foreach (GameObject t in SelectionTiles)
+                    {
+                        t.GetComponent<SelectionTileScript>().IsNotPath();
+                    }
+                    hasBeenClear = true;
+                    OveringTile = null;
+                }
+
+
+                if (Input.GetKey(KeyCode.Escape))
+                {
+                    for (int i = 0; i < SelectionTiles.Count; i++)
+                    {
+                        Destroy(SelectionTiles[i]);
+                    }
+                    SelectionTiles.Clear();
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().IsNotClicked();
+                    foreach (GameObject t in PlayableCharacters)
+                    {
+                        t.GetComponent<PlayableCharacterScript>().CanInteract = true;
+                    }
+                    playerState = PlayerState.isWaiting;
+                    gameState = GameState.Waiting;
+                }
+
+
             }
         }
     }
@@ -373,12 +438,6 @@ public class GameManager : MonoBehaviour
                 }
             }
         }
-        GameObject Playable2 = Instantiate(PlayableCharacterPreFab);
-        Playable2.transform.position = new Vector3(XSize/2, YSize/2, -1);
-        Playable2.GetComponent<PlayableCharacterScript>().X = XSize/2;
-        Playable2.GetComponent<PlayableCharacterScript>().Y = YSize/2;
-        PlayableCharacters.Add(Playable2);
-        Playable2.name = "Playable " + 4;
     }
 
     private void SetUpEnemy()
