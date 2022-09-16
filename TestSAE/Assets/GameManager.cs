@@ -106,11 +106,6 @@ public class GameManager : MonoBehaviour
                             SelectionTiles.Add(SelectedTile);
 
                         }
-                        else
-                        {
-                            i += 1;
-                        }
-
                     }
                 }
 
@@ -129,11 +124,6 @@ public class GameManager : MonoBehaviour
                             SelectionTiles.Add(SelectedTile2);
 
                         }
-                        else
-                        {
-                            i += 1;
-                        }
-
                     }
                 }
 
@@ -154,10 +144,6 @@ public class GameManager : MonoBehaviour
                                 SelectedTile3.GetComponent<SelectionTileScript>().Y = yposition + i;
                                 SelectionTiles.Add(SelectedTile3);
                             }
-                            else
-                            {
-                                j += 1;
-                            }
                         }
                     }
 
@@ -173,10 +159,6 @@ public class GameManager : MonoBehaviour
                                 SelectedTile4.GetComponent<SelectionTileScript>().X = xposition - j - 1;
                                 SelectedTile4.GetComponent<SelectionTileScript>().Y = yposition + i;
                                 SelectionTiles.Add(SelectedTile4);
-                            }
-                            else
-                            {
-                                j += 1;
                             }
                         }
                     }
@@ -195,10 +177,6 @@ public class GameManager : MonoBehaviour
                                 SelectedTile5.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
                                 SelectionTiles.Add(SelectedTile5);
                             }
-                            else
-                            {
-                                j += 1;
-                            }
                         }
                     }
 
@@ -214,10 +192,6 @@ public class GameManager : MonoBehaviour
                                 SelectedTile6.GetComponent<SelectionTileScript>().X = xposition - j - 1;
                                 SelectedTile6.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
                                 SelectionTiles.Add(SelectedTile6);
-                            }
-                            else
-                            {
-                                j += 1;
                             }
                         }
                     }
@@ -241,6 +215,62 @@ public class GameManager : MonoBehaviour
                         }
                     }
                 }
+
+
+
+                // On supprime les chemins qui ne sont pas accessible ou qui ont plus de mouvement que movement 
+
+                List<GameObject> tileToDestroy = new List<GameObject>();
+
+                foreach (GameObject tile in SelectionTiles)
+                {
+                    if (!tile.GetComponent<SelectionTileScript>().Actionnable())
+                    {
+                        // Initialisation Calcul Distance
+                        CalculDistance(tile);
+
+                        // Initialisation Calcul Chemin
+                        foreach (GameObject Arrivee in SelectionTiles)
+                        {
+                            if (Arrivee.GetComponent<SelectionTileScript>().Actionnable())
+                            {
+                                List<GameObject> chemin = CalculChemin(Arrivee);
+
+                                if (chemin.Count > 0)
+                                {
+                                    if (!chemin[0].GetComponent<SelectionTileScript>().Voisins.Contains(Arrivee))
+                                    {
+                                        tileToDestroy.Add(tile);
+                                    }
+                                    else if (chemin.Count > movement)
+                                    {
+                                        tileToDestroy.Add(tile);                                    
+                                    }
+                                }
+                                else
+                                {
+                                    tileToDestroy.Add(tile);
+                                }
+                            }
+                        }
+                    }
+                }
+
+
+
+                // Destruction des tiles inutiles
+                for (int i = 0; i < tileToDestroy.Count; i++)
+                {
+
+                    SelectionTiles.Remove(tileToDestroy[i]);
+                    
+                    foreach(GameObject t in SelectionTiles)
+                    {
+                        t.GetComponent<SelectionTileScript>().RemoveVoisins(tileToDestroy[i]);
+                    }
+                    Destroy(tileToDestroy[i]);
+                }
+                tileToDestroy.Clear();
                 gameState = GameState.Waiting;
             }
 
@@ -258,41 +288,6 @@ public class GameManager : MonoBehaviour
                             hasBeenClear = false;
                             OveringTile = currentTile;
 
-                            
-                            // On supprime les chemins qui ne sont pas accessible ou qui ont plus de mouvement que movement 
-
-                            List<GameObject> tileToDestroy = new List<GameObject>();
-
-                            foreach (GameObject tile in SelectionTiles)
-                            {
-                                // Initialisation Calcul Distance
-                                CalculDistance(tile);
-
-                                // Initialisation Calcul Chemin
-                                foreach (GameObject t in SelectionTiles)
-                                {
-                                    if (t.GetComponent<SelectionTileScript>().Actionnable())
-                                    {
-                                        if (!CalculChemin(t).Contains(t))
-                                        {
-                                            tileToDestroy.Add(tile);
-                                        }
-
-                                    }
-                                }
-                            }
-
-
-                            /*
-                            // Destruction des tiles inutiles
-                            for (int i = 0; i < tileToDestroy.Count; i++)
-                            {
-                                SelectionTiles.Remove(tileToDestroy[i]);
-                                Destroy(tileToDestroy[i]);
-                            }
-                            tileToDestroy.Clear();
-                            */
-
                             // Création du chemin
 
                             // Initialisation Calcul Distance
@@ -304,12 +299,6 @@ public class GameManager : MonoBehaviour
                                 if (t.GetComponent<SelectionTileScript>().Actionnable())
                                 {
                                     List<GameObject> resultat = CalculChemin(t);
-
-                                    string s = "";
-                                    foreach (GameObject tt in resultat)
-                                    {
-                                        s += tt.name + "\n";
-                                    }
 
                                     foreach (GameObject tile in SelectionTiles)
                                     {
