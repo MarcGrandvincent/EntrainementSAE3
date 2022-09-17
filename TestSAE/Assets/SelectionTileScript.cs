@@ -18,6 +18,9 @@ public class SelectionTileScript : MonoBehaviour
     private bool isOver;
     public bool IsOver { get => isOver; }
 
+    private bool hasBeenClick;
+    public bool HasBeenClick { get => hasBeenClick; set => hasBeenClick = value; }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -53,6 +56,11 @@ public class SelectionTileScript : MonoBehaviour
             isOver = true;
         }
 
+    }
+
+    private void OnMouseUp()
+    {
+        hasBeenClick = true;
     }
 
     public void AddVoisins(GameObject SelectionTile)

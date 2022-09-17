@@ -25,6 +25,8 @@ public class GameManager : MonoBehaviour
     public int NumberPlayableCharacters;
     public int NumberEnemies;
 
+    private int numberMovement = 0;
+
     public List<List<GameObject>> Tiles = new List<List<GameObject>>();
     private List<GameObject> PlayableCharacters = new List<GameObject>();
     private List<GameObject> SelectionTiles = new List<GameObject>();
@@ -277,7 +279,7 @@ public class GameManager : MonoBehaviour
             if (gameState == GameState.Waiting)
             {
                 isOvering = false;
-
+                List<GameObject> resultat;
                 foreach (GameObject currentTile in SelectionTiles)
                 {
                     if (currentTile.GetComponent<SelectionTileScript>().IsOver)
@@ -298,8 +300,9 @@ public class GameManager : MonoBehaviour
                             {
                                 if (t.GetComponent<SelectionTileScript>().Actionnable())
                                 {
-                                    List<GameObject> resultat = CalculChemin(t);
 
+                                    resultat = CalculChemin(t);
+                                    numberMovement = resultat.Count;
                                     foreach (GameObject tile in SelectionTiles)
                                     {
                                         if (resultat.Contains(tile))
@@ -313,11 +316,47 @@ public class GameManager : MonoBehaviour
                                     }
                                 }
                             }
-
-
                         }
                     }
                 }
+
+
+                GameObject clickedTile = null;
+                foreach (GameObject selectionTile in SelectionTiles)
+                {
+                    if (selectionTile.GetComponent<SelectionTileScript>().HasBeenClick)
+                    {
+                        clickedTile = selectionTile;
+                    }
+                }
+
+
+                if (clickedTile != null)
+                {
+                    Tiles[SelectedPlayable.GetComponent<PlayableCharacterScript>().X][SelectedPlayable.GetComponent<PlayableCharacterScript>().X].GetComponent<TileScript>().HasPlayer = false;
+                    SelectedPlayable.transform.position = new Vector3(clickedTile.GetComponent<SelectionTileScript>().X, clickedTile.GetComponent<SelectionTileScript>().Y, -1);
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().X = clickedTile.GetComponent<SelectionTileScript>().X;
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().Y = clickedTile.GetComponent<SelectionTileScript>().Y;
+                    Tiles[SelectedPlayable.GetComponent<PlayableCharacterScript>().X][SelectedPlayable.GetComponent<PlayableCharacterScript>().X].GetComponent<TileScript>().HasPlayer = true;
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().IsNotClicked();
+
+
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().Movement -= numberMovement;
+
+                    if (SelectedPlayable.GetComponent<PlayableCharacterScript>().Movement == 0)
+                    {
+                        SelectedPlayable.GetComponent<PlayableCharacterScript>().CanInteract = false;
+                    }
+                    else
+                    {
+                        SelectedPlayable.GetComponent<PlayableCharacterScript>().CanInteract = true;
+                    }
+                    DestroySelectionTile();
+                    playerState = PlayerState.isWaiting;
+                    gameState = GameState.Waiting;
+                }
+
+
                 if (!isOvering && !hasBeenClear)
                 {
                     foreach (GameObject t in SelectionTiles)
@@ -331,11 +370,7 @@ public class GameManager : MonoBehaviour
 
                 if (Input.GetKey(KeyCode.Escape) || Input.GetMouseButtonDown(1))
                 {
-                    for (int i = 0; i < SelectionTiles.Count; i++)
-                    {
-                        Destroy(SelectionTiles[i]);
-                    }
-                    SelectionTiles.Clear();
+                    DestroySelectionTile();
                     SelectedPlayable.GetComponent<PlayableCharacterScript>().IsNotClicked();
                     foreach (GameObject t in PlayableCharacters)
                     {
@@ -489,6 +524,15 @@ public class GameManager : MonoBehaviour
         }
 
         return resultat;
+    }
+
+    private void DestroySelectionTile()
+    {
+        for (int i = 0; i < SelectionTiles.Count; i++)
+        {
+            Destroy(SelectionTiles[i]);
+        }
+        SelectionTiles.Clear();
     }
 }
 

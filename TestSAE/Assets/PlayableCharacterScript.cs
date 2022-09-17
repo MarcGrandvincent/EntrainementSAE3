@@ -12,8 +12,13 @@ public class PlayableCharacterScript : MonoBehaviour
     public int Y { get => y; set => y = value; }
 
 
-    private int movement = 3;
-    public int Movement { get => movement; }
+
+
+    private int maxMovement = 3;
+    public int MaxMovement { get => maxMovement; }
+
+    private int movement = 0;
+    public int Movement { get => movement; set => movement = value; }
 
     private bool hasBeenClicked = false;
     public bool HasBeenClicked { get => hasBeenClicked; }
@@ -22,14 +27,29 @@ public class PlayableCharacterScript : MonoBehaviour
     public bool CanInteract { get => canInteract; set => canInteract = value; }
 
 
+    private bool hasNoMovement;
+    public bool HasNoMovement { get => hasNoMovement; }
+
+
     // Start is called before the first frame update
     void Start()
     {
+        movement = MaxMovement;
     }
 
     // Update is called once per frame
     void Update()
     {
+
+        if (Movement == 0)
+        {
+            hasNoMovement = true;
+            gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 0.2f);
+        }
+        else
+        {
+            hasNoMovement = false;
+        }
     }
 
 
@@ -51,8 +71,11 @@ public class PlayableCharacterScript : MonoBehaviour
 
     private void OnMouseUp()
     {
-        hasBeenClicked = true;
-        gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 0.5f);
+        if (!hasNoMovement)
+        {
+            hasBeenClicked = true;
+            gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 0.5f);
+        }
     }
 
     public void IsNotClicked()
