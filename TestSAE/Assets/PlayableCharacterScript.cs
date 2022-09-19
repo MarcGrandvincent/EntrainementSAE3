@@ -1,6 +1,7 @@
 using Newtonsoft.Json.Bson;
 using System.Collections;
 using System.Collections.Generic;
+using System.IO;
 using UnityEngine;
 
 public class PlayableCharacterScript : MonoBehaviour
@@ -30,6 +31,11 @@ public class PlayableCharacterScript : MonoBehaviour
     private bool hasNoMovement;
     public bool HasNoMovement { get => hasNoMovement; }
 
+    public List<GameObject> followPath;
+    public List<GameObject> FollowPath { set => followPath = value; }
+
+    private bool isMoving = false;
+    public bool IsMoving { get => isMoving; set => isMoving = value; }
 
     // Start is called before the first frame update
     void Start()
@@ -82,5 +88,26 @@ public class PlayableCharacterScript : MonoBehaviour
     {
         hasBeenClicked = false;
         gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 1);
+    }
+
+    public void Move()
+    {
+        isMoving = true;
+        followPath.Reverse();
+
+        if (followPath.Count != 0)
+        {
+            if (followPath[0].transform.position.x > transform.position.x)
+            {
+                transform.Translate(Vector3.right * 0.001f * Time.deltaTime);
+            }
+            else
+            {
+                followPath.RemoveAt(0);
+            }
+        }
+
+        isMoving = false;
+
     }
 }

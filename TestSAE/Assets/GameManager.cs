@@ -30,6 +30,7 @@ public class GameManager : MonoBehaviour
     public List<List<GameObject>> Tiles = new List<List<GameObject>>();
     private List<GameObject> PlayableCharacters = new List<GameObject>();
     private List<GameObject> SelectionTiles = new List<GameObject>();
+    private List<GameObject> path = new List<GameObject>();
     private Dictionary<GameObject, int> distances = new Dictionary<GameObject, int>();
 
 
@@ -80,199 +81,7 @@ public class GameManager : MonoBehaviour
         {
             if (gameState == GameState.IsCreatingSelectionTile)
             {
-                int xposition = SelectedPlayable.GetComponent<PlayableCharacterScript>().X;
-                int yposition = SelectedPlayable.GetComponent<PlayableCharacterScript>().Y;
-                int movement = SelectedPlayable.GetComponent<PlayableCharacterScript>().Movement;
-
-                // We create the point 0
-                GameObject DefaultSelectedTile = Instantiate(SelectionTile);
-                DefaultSelectedTile.transform.position = new Vector3(xposition, yposition,0);
-                DefaultSelectedTile.name = "SelectionTile " + xposition + " " + yposition;
-                DefaultSelectedTile.GetComponent<SelectionTileScript>().X = xposition;
-                DefaultSelectedTile.GetComponent<SelectionTileScript>().Y = yposition;
-                DefaultSelectedTile.GetComponent<SelectionTileScript>().IsNotActionnable();
-                SelectionTiles.Add(DefaultSelectedTile);
-
-
-                for (int i = 0; i < movement; i++)
-                {
-                    if (xposition <= XSize - 1 && xposition >= 0 && yposition + i + 1 <= YSize - 1 && yposition + i + 1 >= 0)
-                    {
-                        if (Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().HasPlayer)
-                        {
-                            GameObject SelectedTile = Instantiate(SelectionTile);
-                            SelectedTile.transform.position = new Vector3(xposition, yposition + i + 1, -2);
-                            SelectedTile.name = "SelectionTile " + xposition + " " + (yposition + i + 1);
-                            SelectedTile.GetComponent<SelectionTileScript>().X = xposition;
-                            SelectedTile.GetComponent<SelectionTileScript>().Y = yposition + i + 1;
-                            SelectionTiles.Add(SelectedTile);
-
-                        }
-                    }
-                }
-
-
-                for (int i = 0; i < movement; i++)
-                {
-                    if (xposition <= XSize - 1 && xposition >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
-                    {
-                        if (Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
-                        {
-                            GameObject SelectedTile2 = Instantiate(SelectionTile);
-                            SelectedTile2.transform.position = new Vector3(xposition, yposition - i - 1, -2);
-                            SelectedTile2.name = "SelectionTile " + xposition + " " + (yposition - i - 1);
-                            SelectedTile2.GetComponent<SelectionTileScript>().X = xposition;
-                            SelectedTile2.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
-                            SelectionTiles.Add(SelectedTile2);
-
-                        }
-                    }
-                }
-
-
-                for (int i = 0; i < movement; i++)
-                {
-                    //Horizontal Haut
-                    for (int j = 0; j < movement - i; j++)
-                    {
-                        if (xposition + j + 1 <= XSize - 1 && xposition + j + 1 >= 0 && yposition + i <= YSize - 1 && yposition + i >= 0)
-                        {
-                            if (Tiles[xposition + j + 1][yposition + i].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition + i].GetComponent<TileScript>().HasPlayer)
-                            {
-                                GameObject SelectedTile3 = Instantiate(SelectionTile);
-                                SelectedTile3.transform.position = new Vector3(xposition + j + 1, yposition + i, -2);
-                                SelectedTile3.name = "SelectionTile " + (xposition + j + 1) + " " + (yposition + i);
-                                SelectedTile3.GetComponent<SelectionTileScript>().X = xposition + j + 1;
-                                SelectedTile3.GetComponent<SelectionTileScript>().Y = yposition + i;
-                                SelectionTiles.Add(SelectedTile3);
-                            }
-                        }
-                    }
-
-                    for (int j = 0; j < movement - i; j++)
-                    {
-                        if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition + i <= YSize - 1 && yposition + i >= 0)
-                        {
-                            if (Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().HasPlayer)
-                            {
-                                GameObject SelectedTile4 = Instantiate(SelectionTile);
-                                SelectedTile4.transform.position = new Vector3(xposition - j - 1, yposition + i, -2);
-                                SelectedTile4.name = "SelectionTile " + (xposition - j - 1) + " " + (yposition + i);
-                                SelectedTile4.GetComponent<SelectionTileScript>().X = xposition - j - 1;
-                                SelectedTile4.GetComponent<SelectionTileScript>().Y = yposition + i;
-                                SelectionTiles.Add(SelectedTile4);
-                            }
-                        }
-                    }
-
-                    // Horizontal Bas
-                    for (int j = 0; j < movement - i - 1; j++)
-                    {
-                        if (xposition + j + 1 <= XSize - 1 && xposition + j + 1 >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
-                        {
-                            if (Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
-                            {
-                                GameObject SelectedTile5 = Instantiate(SelectionTile);
-                                SelectedTile5.transform.position = new Vector3(xposition + j + 1, yposition - i - 1, -2);
-                                SelectedTile5.name = "SelectionTile " + (xposition + j + 1) + " " + (yposition - i - 1);
-                                SelectedTile5.GetComponent<SelectionTileScript>().X = xposition + j + 1;
-                                SelectedTile5.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
-                                SelectionTiles.Add(SelectedTile5);
-                            }
-                        }
-                    }
-
-                    for (int j = 0; j < movement - i - 1; j++)
-                    {
-                        if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
-                        {
-                            if (Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
-                            {
-                                GameObject SelectedTile6 = Instantiate(SelectionTile);
-                                SelectedTile6.transform.position = new Vector3(xposition - j - 1, yposition - i - 1, -2);
-                                SelectedTile6.name = "SelectionTile " + (xposition - j - 1) + " " + (yposition - i - 1);
-                                SelectedTile6.GetComponent<SelectionTileScript>().X = xposition - j - 1;
-                                SelectedTile6.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
-                                SelectionTiles.Add(SelectedTile6);
-                            }
-                        }
-                    }
-                }
-
-                // On récupére les voisins
-                foreach(GameObject currentTile in SelectionTiles)
-                {
-                    foreach(GameObject tile in SelectionTiles)
-                    {
-                        if (tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X + 1 &&
-                            tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y ||
-                            tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y + 1 &&
-                            tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X ||
-                            tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X - 1 &&
-                            tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y ||
-                            tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y - 1 &&
-                            tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X)
-                        {
-                            currentTile.GetComponent<SelectionTileScript>().AddVoisins(tile);
-                        }
-                    }
-                }
-
-
-
-                // On supprime les chemins qui ne sont pas accessible ou qui ont plus de mouvement que movement 
-
-                List<GameObject> tileToDestroy = new List<GameObject>();
-
-                foreach (GameObject tile in SelectionTiles)
-                {
-                    if (!tile.GetComponent<SelectionTileScript>().Actionnable())
-                    {
-                        // Initialisation Calcul Distance
-                        CalculDistance(tile);
-
-                        // Initialisation Calcul Chemin
-                        foreach (GameObject Arrivee in SelectionTiles)
-                        {
-                            if (Arrivee.GetComponent<SelectionTileScript>().Actionnable())
-                            {
-                                List<GameObject> chemin = CalculChemin(Arrivee);
-
-                                if (chemin.Count > 0)
-                                {
-                                    if (!chemin[0].GetComponent<SelectionTileScript>().Voisins.Contains(Arrivee))
-                                    {
-                                        tileToDestroy.Add(tile);
-                                    }
-                                    else if (chemin.Count > movement)
-                                    {
-                                        tileToDestroy.Add(tile);                                    
-                                    }
-                                }
-                                else
-                                {
-                                    tileToDestroy.Add(tile);
-                                }
-                            }
-                        }
-                    }
-                }
-
-
-
-                // Destruction des tiles inutiles
-                for (int i = 0; i < tileToDestroy.Count; i++)
-                {
-
-                    SelectionTiles.Remove(tileToDestroy[i]);
-                    
-                    foreach(GameObject t in SelectionTiles)
-                    {
-                        t.GetComponent<SelectionTileScript>().RemoveVoisins(tileToDestroy[i]);
-                    }
-                    Destroy(tileToDestroy[i]);
-                }
-                tileToDestroy.Clear();
+                CreateSelectionTile();
                 gameState = GameState.Waiting;
             }
 
@@ -302,6 +111,7 @@ public class GameManager : MonoBehaviour
                                 {
 
                                     resultat = CalculChemin(t);
+                                    path = resultat;
                                     numberMovement = resultat.Count;
                                     foreach (GameObject tile in SelectionTiles)
                                     {
@@ -333,51 +143,19 @@ public class GameManager : MonoBehaviour
 
                 if (clickedTile != null)
                 {
-                    Tiles[SelectedPlayable.GetComponent<PlayableCharacterScript>().X][SelectedPlayable.GetComponent<PlayableCharacterScript>().X].GetComponent<TileScript>().HasPlayer = false;
-                    SelectedPlayable.transform.position = new Vector3(clickedTile.GetComponent<SelectionTileScript>().X, clickedTile.GetComponent<SelectionTileScript>().Y, -1);
-                    SelectedPlayable.GetComponent<PlayableCharacterScript>().X = clickedTile.GetComponent<SelectionTileScript>().X;
-                    SelectedPlayable.GetComponent<PlayableCharacterScript>().Y = clickedTile.GetComponent<SelectionTileScript>().Y;
-                    Tiles[SelectedPlayable.GetComponent<PlayableCharacterScript>().X][SelectedPlayable.GetComponent<PlayableCharacterScript>().X].GetComponent<TileScript>().HasPlayer = true;
-                    SelectedPlayable.GetComponent<PlayableCharacterScript>().IsNotClicked();
-
-
-                    SelectedPlayable.GetComponent<PlayableCharacterScript>().Movement -= numberMovement;
-
-                    if (SelectedPlayable.GetComponent<PlayableCharacterScript>().Movement == 0)
-                    {
-                        SelectedPlayable.GetComponent<PlayableCharacterScript>().CanInteract = false;
-                    }
-                    else
-                    {
-                        SelectedPlayable.GetComponent<PlayableCharacterScript>().CanInteract = true;
-                    }
-                    DestroySelectionTile();
-                    playerState = PlayerState.isWaiting;
-                    gameState = GameState.Waiting;
+                    MoveAndUpdatePlayable(clickedTile);
                 }
 
 
                 if (!isOvering && !hasBeenClear)
                 {
-                    foreach (GameObject t in SelectionTiles)
-                    {
-                        t.GetComponent<SelectionTileScript>().IsNotPath();
-                    }
-                    hasBeenClear = true;
-                    OveringTile = null;
+                    PutTilesWhite();
                 }
 
 
                 if (Input.GetKey(KeyCode.Escape) || Input.GetMouseButtonDown(1))
                 {
-                    DestroySelectionTile();
-                    SelectedPlayable.GetComponent<PlayableCharacterScript>().IsNotClicked();
-                    foreach (GameObject t in PlayableCharacters)
-                    {
-                        t.GetComponent<PlayableCharacterScript>().CanInteract = true;
-                    }
-                    playerState = PlayerState.isWaiting;
-                    gameState = GameState.Waiting;
+                    CancelMovement();
                 }
 
 
@@ -534,13 +312,264 @@ public class GameManager : MonoBehaviour
         }
         SelectionTiles.Clear();
     }
+
+    private void CreateSelectionTile()
+    {
+        int xposition = SelectedPlayable.GetComponent<PlayableCharacterScript>().X;
+        int yposition = SelectedPlayable.GetComponent<PlayableCharacterScript>().Y;
+        int movement = SelectedPlayable.GetComponent<PlayableCharacterScript>().Movement;
+
+        // We create the point 0
+        GameObject DefaultSelectedTile = Instantiate(SelectionTile);
+        DefaultSelectedTile.transform.position = new Vector3(xposition, yposition, 0);
+        DefaultSelectedTile.name = "SelectionTile " + xposition + " " + yposition;
+        DefaultSelectedTile.GetComponent<SelectionTileScript>().X = xposition;
+        DefaultSelectedTile.GetComponent<SelectionTileScript>().Y = yposition;
+        DefaultSelectedTile.GetComponent<SelectionTileScript>().IsNotActionnable();
+        SelectionTiles.Add(DefaultSelectedTile);
+
+
+        for (int i = 0; i < movement; i++)
+        {
+            if (xposition <= XSize - 1 && xposition >= 0 && yposition + i + 1 <= YSize - 1 && yposition + i + 1 >= 0)
+            {
+                if (Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().HasPlayer)
+                {
+                    GameObject SelectedTile = Instantiate(SelectionTile);
+                    SelectedTile.transform.position = new Vector3(xposition, yposition + i + 1, -2);
+                    SelectedTile.name = "SelectionTile " + xposition + " " + (yposition + i + 1);
+                    SelectedTile.GetComponent<SelectionTileScript>().X = xposition;
+                    SelectedTile.GetComponent<SelectionTileScript>().Y = yposition + i + 1;
+                    SelectionTiles.Add(SelectedTile);
+
+                }
+            }
+        }
+
+
+        for (int i = 0; i < movement; i++)
+        {
+            if (xposition <= XSize - 1 && xposition >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
+            {
+                if (Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
+                {
+                    GameObject SelectedTile2 = Instantiate(SelectionTile);
+                    SelectedTile2.transform.position = new Vector3(xposition, yposition - i - 1, -2);
+                    SelectedTile2.name = "SelectionTile " + xposition + " " + (yposition - i - 1);
+                    SelectedTile2.GetComponent<SelectionTileScript>().X = xposition;
+                    SelectedTile2.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
+                    SelectionTiles.Add(SelectedTile2);
+
+                }
+            }
+        }
+
+
+        for (int i = 0; i < movement; i++)
+        {
+            //Horizontal Haut
+            for (int j = 0; j < movement - i; j++)
+            {
+                if (xposition + j + 1 <= XSize - 1 && xposition + j + 1 >= 0 && yposition + i <= YSize - 1 && yposition + i >= 0)
+                {
+                    if (Tiles[xposition + j + 1][yposition + i].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition + i].GetComponent<TileScript>().HasPlayer)
+                    {
+                        GameObject SelectedTile3 = Instantiate(SelectionTile);
+                        SelectedTile3.transform.position = new Vector3(xposition + j + 1, yposition + i, -2);
+                        SelectedTile3.name = "SelectionTile " + (xposition + j + 1) + " " + (yposition + i);
+                        SelectedTile3.GetComponent<SelectionTileScript>().X = xposition + j + 1;
+                        SelectedTile3.GetComponent<SelectionTileScript>().Y = yposition + i;
+                        SelectionTiles.Add(SelectedTile3);
+                    }
+                }
+            }
+
+            for (int j = 0; j < movement - i; j++)
+            {
+                if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition + i <= YSize - 1 && yposition + i >= 0)
+                {
+                    if (Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().HasPlayer)
+                    {
+                        GameObject SelectedTile4 = Instantiate(SelectionTile);
+                        SelectedTile4.transform.position = new Vector3(xposition - j - 1, yposition + i, -2);
+                        SelectedTile4.name = "SelectionTile " + (xposition - j - 1) + " " + (yposition + i);
+                        SelectedTile4.GetComponent<SelectionTileScript>().X = xposition - j - 1;
+                        SelectedTile4.GetComponent<SelectionTileScript>().Y = yposition + i;
+                        SelectionTiles.Add(SelectedTile4);
+                    }
+                }
+            }
+
+            // Horizontal Bas
+            for (int j = 0; j < movement - i - 1; j++)
+            {
+                if (xposition + j + 1 <= XSize - 1 && xposition + j + 1 >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
+                {
+                    if (Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
+                    {
+                        GameObject SelectedTile5 = Instantiate(SelectionTile);
+                        SelectedTile5.transform.position = new Vector3(xposition + j + 1, yposition - i - 1, -2);
+                        SelectedTile5.name = "SelectionTile " + (xposition + j + 1) + " " + (yposition - i - 1);
+                        SelectedTile5.GetComponent<SelectionTileScript>().X = xposition + j + 1;
+                        SelectedTile5.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
+                        SelectionTiles.Add(SelectedTile5);
+                    }
+                }
+            }
+
+            for (int j = 0; j < movement - i - 1; j++)
+            {
+                if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
+                {
+                    if (Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
+                    {
+                        GameObject SelectedTile6 = Instantiate(SelectionTile);
+                        SelectedTile6.transform.position = new Vector3(xposition - j - 1, yposition - i - 1, -2);
+                        SelectedTile6.name = "SelectionTile " + (xposition - j - 1) + " " + (yposition - i - 1);
+                        SelectedTile6.GetComponent<SelectionTileScript>().X = xposition - j - 1;
+                        SelectedTile6.GetComponent<SelectionTileScript>().Y = yposition - i - 1;
+                        SelectionTiles.Add(SelectedTile6);
+                    }
+                }
+            }
+        }
+
+        // On récupére les voisins
+        foreach (GameObject currentTile in SelectionTiles)
+        {
+            foreach (GameObject tile in SelectionTiles)
+            {
+                if (tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X + 1 &&
+                    tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y ||
+                    tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y + 1 &&
+                    tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X ||
+                    tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X - 1 &&
+                    tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y ||
+                    tile.GetComponent<SelectionTileScript>().Y == currentTile.GetComponent<SelectionTileScript>().Y - 1 &&
+                    tile.GetComponent<SelectionTileScript>().X == currentTile.GetComponent<SelectionTileScript>().X)
+                {
+                    currentTile.GetComponent<SelectionTileScript>().AddVoisins(tile);
+                }
+            }
+        }
+
+
+
+        // On supprime les chemins qui ne sont pas accessible ou qui ont plus de mouvement que movement 
+
+        List<GameObject> tileToDestroy = new List<GameObject>();
+
+        foreach (GameObject tile in SelectionTiles)
+        {
+            if (!tile.GetComponent<SelectionTileScript>().Actionnable())
+            {
+                // Initialisation Calcul Distance
+                CalculDistance(tile);
+
+                // Initialisation Calcul Chemin
+                foreach (GameObject Arrivee in SelectionTiles)
+                {
+                    if (Arrivee.GetComponent<SelectionTileScript>().Actionnable())
+                    {
+                        List<GameObject> chemin = CalculChemin(Arrivee);
+
+                        if (chemin.Count > 0)
+                        {
+                            if (!chemin[0].GetComponent<SelectionTileScript>().Voisins.Contains(Arrivee))
+                            {
+                                tileToDestroy.Add(tile);
+                            }
+                            else if (chemin.Count > movement)
+                            {
+                                tileToDestroy.Add(tile);
+                            }
+                        }
+                        else
+                        {
+                            tileToDestroy.Add(tile);
+                        }
+                    }
+                }
+            }
+        }
+
+
+
+        // Destruction des tiles inutiles
+        for (int i = 0; i < tileToDestroy.Count; i++)
+        {
+
+            SelectionTiles.Remove(tileToDestroy[i]);
+
+            foreach (GameObject t in SelectionTiles)
+            {
+                t.GetComponent<SelectionTileScript>().RemoveVoisins(tileToDestroy[i]);
+            }
+            Destroy(tileToDestroy[i]);
+        }
+        tileToDestroy.Clear();
+    }
+
+
+    private void PutTilesWhite()
+    {
+        foreach (GameObject t in SelectionTiles)
+        {
+            t.GetComponent<SelectionTileScript>().IsNotPath();
+        }
+        hasBeenClear = true;
+        OveringTile = null;
+    }
+
+    private void MoveAndUpdatePlayable(GameObject clickedTile)
+    {
+        Tiles[SelectedPlayable.GetComponent<PlayableCharacterScript>().X][SelectedPlayable.GetComponent<PlayableCharacterScript>().X].GetComponent<TileScript>().HasPlayer = false;
+
+        SelectedPlayable.GetComponent<PlayableCharacterScript>().FollowPath = path;
+        
+        SelectedPlayable.GetComponent<PlayableCharacterScript>().Move();
+
+        //SelectedPlayable.transform.position = new Vector3(clickedTile.GetComponent<SelectionTileScript>().X, clickedTile.GetComponent<SelectionTileScript>().Y, -1);
+        SelectedPlayable.GetComponent<PlayableCharacterScript>().X = clickedTile.GetComponent<SelectionTileScript>().X;
+        SelectedPlayable.GetComponent<PlayableCharacterScript>().Y = clickedTile.GetComponent<SelectionTileScript>().Y;
+        Tiles[SelectedPlayable.GetComponent<PlayableCharacterScript>().X][SelectedPlayable.GetComponent<PlayableCharacterScript>().X].GetComponent<TileScript>().HasPlayer = true;
+        SelectedPlayable.GetComponent<PlayableCharacterScript>().IsNotClicked();
+
+
+        SelectedPlayable.GetComponent<PlayableCharacterScript>().Movement -= numberMovement;
+
+        if (SelectedPlayable.GetComponent<PlayableCharacterScript>().Movement == 0)
+        {
+            SelectedPlayable.GetComponent<PlayableCharacterScript>().CanInteract = false;
+        }
+        else
+        {
+            SelectedPlayable.GetComponent<PlayableCharacterScript>().CanInteract = true;
+        }
+        DestroySelectionTile();
+        playerState = PlayerState.isWaiting;
+        gameState = GameState.Waiting;
+    }
+
+    private void CancelMovement()
+    {
+        DestroySelectionTile();
+        SelectedPlayable.GetComponent<PlayableCharacterScript>().IsNotClicked();
+        foreach (GameObject t in PlayableCharacters)
+        {
+            t.GetComponent<PlayableCharacterScript>().CanInteract = true;
+        }
+        playerState = PlayerState.isWaiting;
+        gameState = GameState.Waiting;
+    }
 }
 
 
 public enum GameState
 {
     Waiting, 
-    IsCreatingSelectionTile
+    IsCreatingSelectionTile,
+    IsMovingPlayable
 }
 public enum PlayerState
 {
