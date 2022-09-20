@@ -99,4 +99,10 @@ public class SelectionTileScript : MonoBehaviour
     {
         return isNotActionnable;
     }
+
+    public void Hide()
+    {
+        gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 0f);
+        isNotActionnable = true;
+    }
 }

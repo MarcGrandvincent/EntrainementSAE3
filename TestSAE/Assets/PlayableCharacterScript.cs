@@ -31,9 +31,6 @@ public class PlayableCharacterScript : MonoBehaviour
     private bool hasNoMovement;
     public bool HasNoMovement { get => hasNoMovement; }
 
-    public List<GameObject> followPath;
-    public List<GameObject> FollowPath { set => followPath = value; }
-
     private bool isMoving = false;
     public bool IsMoving { get => isMoving; set => isMoving = value; }
 
@@ -50,7 +47,7 @@ public class PlayableCharacterScript : MonoBehaviour
         if (Movement == 0)
         {
             hasNoMovement = true;
-            gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 0.2f);
+            gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 0.5f);
         }
         else
         {
@@ -77,11 +74,21 @@ public class PlayableCharacterScript : MonoBehaviour
 
     private void OnMouseUp()
     {
-        if (!hasNoMovement)
+        if (CanInteract)
         {
-            hasBeenClicked = true;
-            gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 0.5f);
+            if (!hasNoMovement)
+            {
+                hasBeenClicked = true;
+                gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 0.5f);
+            }
         }
+    }
+
+
+    public void isInteractive()
+    {
+        CanInteract = true;
+        gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 1);
     }
 
     public void IsNotClicked()
@@ -90,24 +97,4 @@ public class PlayableCharacterScript : MonoBehaviour
         gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 1);
     }
 
-    public void Move()
-    {
-        isMoving = true;
-        followPath.Reverse();
-
-        if (followPath.Count != 0)
-        {
-            if (followPath[0].transform.position.x > transform.position.x)
-            {
-                transform.Translate(Vector3.right * 0.001f * Time.deltaTime);
-            }
-            else
-            {
-                followPath.RemoveAt(0);
-            }
-        }
-
-        isMoving = false;
-
-    }
 }

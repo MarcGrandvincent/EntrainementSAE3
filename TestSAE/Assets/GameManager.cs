@@ -1,18 +1,25 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using System.Runtime.Serialization;
+using Unity.Mathematics;
 using UnityEditor;
+using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using UnityEngine.Playables;
+using UnityEngine.UI;
 using UnityEngine.UIElements;
 using static UnityEngine.Networking.UnityWebRequest;
 
 public class GameManager : MonoBehaviour
 {
 
-    Turn GameTurn = Turn.Player;
+    Turn gameTurn = Turn.Player;
     PlayerState playerState = PlayerState.isWaiting;
     GameState gameState = GameState.Waiting;
+    AnnouncementState announcementState = AnnouncementState.isCreating;
 
 
     private GameObject SelectedPlayable = null;
@@ -37,10 +44,19 @@ public class GameManager : MonoBehaviour
     public GameObject TilePrefab;
     public GameObject PlayableCharacterPreFab;
     public GameObject SelectionTile;
+    public GameObject UI;
+    public Camera MainCamera;
 
+    private Text GameAnnouncementText;
+
+    private float time = 0;
+
+    
     // Start is called before the first frame update
     void Start()
     {
+        GameAnnouncementText = UI.transform.Find("GameAnnouncement").GetComponent<Text>();
+        
         for (int i = 0; i < YSize; i++)
         {
             Tiles.Add(new List<GameObject>());
@@ -53,112 +69,195 @@ public class GameManager : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (playerState == PlayerState.isWaiting)
+        if (gameState == GameState.TurnedChanged)
         {
-            foreach (GameObject playable in PlayableCharacters)
+            if (announcementState == AnnouncementState.isCreating)
             {
-                if (playable.GetComponent<PlayableCharacterScript>().HasBeenClicked)
+                GameAnnouncementText.fontSize = 350;
+                GameAnnouncementText.transform.localScale = new Vector2(2,2);
+
+                if (gameTurn == Turn.Enemy)
                 {
-                    SelectedPlayable = playable;
-                    for (int x = 0; x < XSize; x++)
-                    {
-                        for (int y = 0; y < YSize; y++)
-                        {
-                            Tiles[x][y].GetComponent<TileScript>().CanInteract = false;
-                        }
-                    }
-                    foreach (GameObject p in PlayableCharacters)
-                    {
-                        p.GetComponent<PlayableCharacterScript>().CanInteract = false;
-                    }
-                    playerState = PlayerState.isMoving;
-                    gameState = GameState.IsCreatingSelectionTile;
+                    GameAnnouncementText.text = "Enemies Turn";
+                    GameAnnouncementText.color = new Color(1, 0, 0, 1);
                 }
+                else if (gameTurn == Turn.Player)
+                {
+                    GameAnnouncementText.text = "Player Turn";
+                    GameAnnouncementText.color = new Color(0, 0, 1, 1);
+                }
+               // GameAnnouncementText.GetComponent<TextShakeScript>().SetCoordinateShake(GameAnnouncementText.transform.position.x, GameAnnouncementText.transform.position.y);
+                announcementState = AnnouncementState.isMovingStep1;
+            }
+
+            if (announcementState == AnnouncementState.isMovingStep1)
+            {
+                GameAnnouncementText.transform.localScale -= new Vector3(5f * Time.deltaTime,5f * Time.deltaTime,0);
+
+                if (GameAnnouncementText.transform.localScale.x <= 0.5f)
+                {
+                    announcementState = AnnouncementState.isMovingStep2;
+                    MainCamera.GetComponent<CameraScript>().Shake(0.03f, 0.5f);
+                    //GameAnnouncementText.GetComponent<TextShakeScript>().Shake(0.000001f, 0.5f);
+                }
+            }
+
+            if (announcementState == AnnouncementState.isMovingStep2)
+            {
+                time += Time.deltaTime;
+
+                if (time > 2f)
+                {
+                    announcementState = AnnouncementState.isFinished;
+                    time = 0;
+                }
+             }
+
+            if (announcementState == AnnouncementState.isFinished)
+            {
+                GameAnnouncementText.transform.localScale -= new Vector3(5f * Time.deltaTime, 5f * Time.deltaTime, 0);
+
+                if (GameAnnouncementText.transform.localScale.x <= 0)
+                {
+                    GameAnnouncementText.transform.localScale = new Vector3(0, 0, 0);
+                    GameAnnouncementText.text = "";
+                    gameState = GameState.Waiting;
+                    announcementState = AnnouncementState.isCreating;
+
+                    if (gameTurn == Turn.Player)
+                    {
+                        SetMovementMax();
+                        GiveBackMovement(false);
+                    }
+                }
+            }
+
+        }
+
+
+        if (gameTurn == Turn.Enemy)
+        {
+            if (gameState == GameState.Waiting)
+            {
+                gameTurn = Turn.Player;
+                gameState = GameState.TurnedChanged;
             }
         }
 
-        if (playerState == PlayerState.isMoving)
+        if (gameTurn == Turn.Player)
         {
-            if (gameState == GameState.IsCreatingSelectionTile)
+            if (playerState == PlayerState.isWaiting)
             {
-                CreateSelectionTile();
-                gameState = GameState.Waiting;
+                foreach (GameObject playable in PlayableCharacters)
+                {
+                    if (playable.GetComponent<PlayableCharacterScript>().HasBeenClicked)
+                    {
+                        SelectedPlayable = playable;
+                        for (int x = 0; x < XSize; x++)
+                        {
+                            for (int y = 0; y < YSize; y++)
+                            {
+                                Tiles[x][y].GetComponent<TileScript>().CanInteract = false;
+                            }
+                        }
+                        foreach (GameObject p in PlayableCharacters)
+                        {
+                            p.GetComponent<PlayableCharacterScript>().CanInteract = false;
+                        }
+                        playerState = PlayerState.isMoving;
+                        gameState = GameState.IsCreatingSelectionTile;
+                    }
+                }
             }
 
-            if (gameState == GameState.Waiting)
+            if (playerState == PlayerState.isMoving)
             {
-                isOvering = false;
-                List<GameObject> resultat;
-                foreach (GameObject currentTile in SelectionTiles)
+                if (gameState == GameState.IsCreatingSelectionTile)
                 {
-                    if (currentTile.GetComponent<SelectionTileScript>().IsOver)
+                    CreateSelectionTile();
+                    gameState = GameState.Waiting;
+                }
+
+                if (gameState == GameState.Waiting)
+                {
+                    isOvering = false;
+                    List<GameObject> resultat;
+                    foreach (GameObject currentTile in SelectionTiles)
                     {
-                        isOvering = true;
-                        if (currentTile != OveringTile)
+                        if (currentTile.GetComponent<SelectionTileScript>().IsOver)
                         {
-                            hasBeenClear = false;
-                            OveringTile = currentTile;
-
-                            // Création du chemin
-
-                            // Initialisation Calcul Distance
-                            CalculDistance(OveringTile);
-
-                            // Initialisation Calcul Chemin
-                            foreach (GameObject t in SelectionTiles)
+                            isOvering = true;
+                            if (currentTile != OveringTile)
                             {
-                                if (t.GetComponent<SelectionTileScript>().Actionnable())
-                                {
+                                hasBeenClear = false;
+                                OveringTile = currentTile;
 
-                                    resultat = CalculChemin(t);
-                                    path = resultat;
-                                    numberMovement = resultat.Count;
-                                    foreach (GameObject tile in SelectionTiles)
+                                // Création du chemin
+
+                                // Initialisation Calcul Distance
+                                CalculDistance(OveringTile);
+
+                                // Initialisation Calcul Chemin
+                                foreach (GameObject t in SelectionTiles)
+                                {
+                                    if (t.GetComponent<SelectionTileScript>().Actionnable())
                                     {
-                                        if (resultat.Contains(tile))
+
+                                        resultat = CalculChemin(t);
+                                        path = resultat;
+                                        numberMovement = resultat.Count;
+                                        foreach (GameObject tile in SelectionTiles)
                                         {
-                                            tile.GetComponent<SelectionTileScript>().IsPath();
-                                        }
-                                        else
-                                        {
-                                            tile.GetComponent<SelectionTileScript>().IsNotPath();
+                                            if (resultat.Contains(tile))
+                                            {
+                                                tile.GetComponent<SelectionTileScript>().IsPath();
+                                            }
+                                            else
+                                            {
+                                                tile.GetComponent<SelectionTileScript>().IsNotPath();
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
 
 
-                GameObject clickedTile = null;
-                foreach (GameObject selectionTile in SelectionTiles)
-                {
-                    if (selectionTile.GetComponent<SelectionTileScript>().HasBeenClick)
+                    GameObject clickedTile = null;
+                    foreach (GameObject selectionTile in SelectionTiles)
                     {
-                        clickedTile = selectionTile;
+                        if (selectionTile.GetComponent<SelectionTileScript>().HasBeenClick)
+                        {
+                            clickedTile = selectionTile;
+                        }
                     }
+
+
+                    if (clickedTile != null)
+                    {
+                        MoveAndUpdatePlayable(clickedTile);
+                    }
+
+
+                    if (!isOvering && !hasBeenClear)
+                    {
+                        PutTilesWhite();
+                    }
+
+
+                    if (Input.GetKey(KeyCode.Escape) || Input.GetMouseButtonDown(1))
+                    {
+                        CancelMovement();
+                    }
+
+
                 }
+            }
 
-
-                if (clickedTile != null)
-                {
-                    MoveAndUpdatePlayable(clickedTile);
-                }
-
-
-                if (!isOvering && !hasBeenClear)
-                {
-                    PutTilesWhite();
-                }
-
-
-                if (Input.GetKey(KeyCode.Escape) || Input.GetMouseButtonDown(1))
-                {
-                    CancelMovement();
-                }
-
-
+            if (gameState == GameState.IsMovingPlayable && playerState == PlayerState.WaitForAnimation)
+            {
+                AnimateMovementPlayable();
             }
         }
     }
@@ -175,7 +274,8 @@ public class GameManager : MonoBehaviour
                 GameObject tile = Instantiate(TilePrefab);
                 tile.name = "Tile " + x + " " + y;
                 tile.transform.position = new Vector2(x, y);
-                int c = Random.Range(1, 100);
+                
+                int c = UnityEngine.Random.Range(1, 100);
                 if (c <= 10)
                 {
                     tile.GetComponent<TileScript>().ChangeType(Type.TREE);
@@ -201,8 +301,8 @@ public class GameManager : MonoBehaviour
             
             while (!valide)
             {
-                int xposition = Random.Range(0, XSize);
-                int yposition = Random.Range(0, YSize/5);
+                int xposition = UnityEngine.Random.Range(0, XSize);
+                int yposition = UnityEngine.Random.Range(0, YSize/5);
 
                 if (Tiles[xposition][yposition].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition].GetComponent<TileScript>().HasPlayer)
                 {
@@ -523,16 +623,11 @@ public class GameManager : MonoBehaviour
 
     private void MoveAndUpdatePlayable(GameObject clickedTile)
     {
-        Tiles[SelectedPlayable.GetComponent<PlayableCharacterScript>().X][SelectedPlayable.GetComponent<PlayableCharacterScript>().X].GetComponent<TileScript>().HasPlayer = false;
+        Tiles[SelectedPlayable.GetComponent<PlayableCharacterScript>().X][SelectedPlayable.GetComponent<PlayableCharacterScript>().Y].GetComponent<TileScript>().HasPlayer = false;
 
-        SelectedPlayable.GetComponent<PlayableCharacterScript>().FollowPath = path;
+
+        Tiles[clickedTile.GetComponent<SelectionTileScript>().X][clickedTile.GetComponent<SelectionTileScript>().Y].GetComponent<TileScript>().HasPlayer = true;
         
-        SelectedPlayable.GetComponent<PlayableCharacterScript>().Move();
-
-        //SelectedPlayable.transform.position = new Vector3(clickedTile.GetComponent<SelectionTileScript>().X, clickedTile.GetComponent<SelectionTileScript>().Y, -1);
-        SelectedPlayable.GetComponent<PlayableCharacterScript>().X = clickedTile.GetComponent<SelectionTileScript>().X;
-        SelectedPlayable.GetComponent<PlayableCharacterScript>().Y = clickedTile.GetComponent<SelectionTileScript>().Y;
-        Tiles[SelectedPlayable.GetComponent<PlayableCharacterScript>().X][SelectedPlayable.GetComponent<PlayableCharacterScript>().X].GetComponent<TileScript>().HasPlayer = true;
         SelectedPlayable.GetComponent<PlayableCharacterScript>().IsNotClicked();
 
 
@@ -546,9 +641,94 @@ public class GameManager : MonoBehaviour
         {
             SelectedPlayable.GetComponent<PlayableCharacterScript>().CanInteract = true;
         }
-        DestroySelectionTile();
-        playerState = PlayerState.isWaiting;
-        gameState = GameState.Waiting;
+        //DestroySelectionTile();
+        HideSelectionTile();
+        path.Reverse();
+        gameState = GameState.IsMovingPlayable;
+        playerState = PlayerState.WaitForAnimation;
+    }
+
+    private void AnimateMovementPlayable()
+    {
+        if (path.Count > 0)
+        {
+            if (path[path.Count - 1].GetComponent<SelectionTileScript>().X > SelectedPlayable.GetComponent<PlayableCharacterScript>().X)
+            {
+                if (SelectedPlayable.transform.position.x < path[path.Count - 1].GetComponent<SelectionTileScript>().X)
+                {
+                    SelectedPlayable.transform.Translate(Vector3.right * 10f * Time.deltaTime);
+                }
+                else
+                {
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().X = path[path.Count - 1].GetComponent<SelectionTileScript>().X;
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().Y = path[path.Count - 1].GetComponent<SelectionTileScript>().Y;
+                    SelectedPlayable.transform.position = new Vector3(path[path.Count - 1].GetComponent<SelectionTileScript>().X, path[path.Count - 1].GetComponent<SelectionTileScript>().Y, -1);
+                    path.RemoveAt(path.Count - 1);
+                }
+            }
+
+            else if (path[path.Count - 1].GetComponent<SelectionTileScript>().X < SelectedPlayable.GetComponent<PlayableCharacterScript>().X)
+            {
+                if (SelectedPlayable.transform.position.x > path[path.Count - 1].GetComponent<SelectionTileScript>().X)
+                {
+                    SelectedPlayable.transform.Translate(Vector3.left * 10f * Time.deltaTime);
+                }
+                else
+                {
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().X = path[path.Count - 1].GetComponent<SelectionTileScript>().X;
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().Y = path[path.Count - 1].GetComponent<SelectionTileScript>().Y;
+                    SelectedPlayable.transform.position = new Vector3(path[path.Count - 1].GetComponent<SelectionTileScript>().X, path[path.Count - 1].GetComponent<SelectionTileScript>().Y, -1);
+                    path.RemoveAt(path.Count - 1);
+                }
+            }
+
+            else if (path[path.Count - 1].GetComponent<SelectionTileScript>().Y > SelectedPlayable.GetComponent<PlayableCharacterScript>().Y)
+            {
+                if (SelectedPlayable.transform.position.y < path[path.Count - 1].GetComponent<SelectionTileScript>().Y)
+                {
+                    SelectedPlayable.transform.Translate(Vector3.up * 10f * Time.deltaTime);
+                }
+                else
+                {
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().X = path[path.Count - 1].GetComponent<SelectionTileScript>().X;
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().Y = path[path.Count - 1].GetComponent<SelectionTileScript>().Y;
+                    SelectedPlayable.transform.position = new Vector3(path[path.Count - 1].GetComponent<SelectionTileScript>().X, path[path.Count - 1].GetComponent<SelectionTileScript>().Y, -1);
+                    path.RemoveAt(path.Count - 1);
+                }
+            }
+
+            else if (path[path.Count - 1].GetComponent<SelectionTileScript>().Y < SelectedPlayable.GetComponent<PlayableCharacterScript>().Y)
+            {
+                if (SelectedPlayable.transform.position.y > path[path.Count - 1].GetComponent<SelectionTileScript>().Y)
+                {
+                    SelectedPlayable.transform.Translate(Vector3.down * 10f * Time.deltaTime);
+                }
+                else
+                {
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().X = path[path.Count - 1].GetComponent<SelectionTileScript>().X;
+                    SelectedPlayable.GetComponent<PlayableCharacterScript>().Y = path[path.Count - 1].GetComponent<SelectionTileScript>().Y;
+                    SelectedPlayable.transform.position = new Vector3(path[path.Count - 1].GetComponent<SelectionTileScript>().X, path[path.Count - 1].GetComponent<SelectionTileScript>().Y, -1);
+                    path.RemoveAt(path.Count - 1);
+                }
+            }
+
+        }
+        else
+        {
+            DestroySelectionTile();
+            if (!HasMovement())
+            {
+                gameTurn = Turn.Enemy;
+                gameState = GameState.TurnedChanged;
+                playerState = PlayerState.isWaiting;
+            }
+            else
+            {
+                GiveBackMovement(true);
+                gameState = GameState.Waiting;
+                playerState = PlayerState.isWaiting;
+            }
+        }
     }
 
     private void CancelMovement()
@@ -562,6 +742,59 @@ public class GameManager : MonoBehaviour
         playerState = PlayerState.isWaiting;
         gameState = GameState.Waiting;
     }
+
+    private void HideSelectionTile()
+    {
+        foreach (GameObject tile in SelectionTiles)
+        {
+            tile.GetComponent<SelectionTileScript>().Hide();
+        }
+    }
+
+    private void GiveBackMovement(bool movement)
+    {
+        if (movement)
+        {
+            foreach (GameObject p in PlayableCharacters)
+            {
+                if (!p.GetComponent<PlayableCharacterScript>().HasNoMovement)
+                {
+                    p.GetComponent<PlayableCharacterScript>().CanInteract = true;
+                }
+            }
+        }
+        else
+        {
+            foreach (GameObject p in PlayableCharacters)
+            {
+                p.GetComponent<PlayableCharacterScript>().isInteractive();
+            }
+        }
+
+    }
+
+    private bool HasMovement()
+    {
+        bool isTrue = false;
+
+        foreach (GameObject p in PlayableCharacters)
+        {
+            if (!p.GetComponent<PlayableCharacterScript>().HasNoMovement)
+            {
+                isTrue = true;
+            }
+        }
+
+        return isTrue;
+    }
+
+    private void SetMovementMax()
+    {
+        foreach (GameObject p in PlayableCharacters)
+        {
+            p.GetComponent<PlayableCharacterScript>().Movement = p.GetComponent<PlayableCharacterScript>().MaxMovement;
+        }
+    }
 }
 
 
@@ -569,13 +802,24 @@ public enum GameState
 {
     Waiting, 
     IsCreatingSelectionTile,
-    IsMovingPlayable
+    IsMovingPlayable,
+    TurnedChanged
 }
 public enum PlayerState
 {
     isWaiting,
+    WaitForAnimation,
     isMoving
 }
+
+public enum AnnouncementState
+{
+    isCreating,
+    isMovingStep1,
+    isMovingStep2,
+    isFinished
+}
+
 public enum Turn
 {
     Player,
