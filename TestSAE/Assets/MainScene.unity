@@ -414,8 +414,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 88f50c406aefd834bb547dc9e4c2d237, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  XSize: 30
-  YSize: 30
+  XSize: 15
+  YSize: 15
   NumberPlayableCharacters: 3
   NumberEnemies: 3
   TilePrefab: {fileID: 5455190738330254944, guid: f9d865ed183817f4499292faf470b449, type: 3}
