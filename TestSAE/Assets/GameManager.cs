@@ -2,6 +2,7 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.IO;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
 using Unity.Mathematics;
@@ -33,6 +34,7 @@ public class GameManager : MonoBehaviour
     public int NumberEnemies;
 
     private int numberMovement = 0;
+    private int enemyMovedCount;
 
     public List<List<GameObject>> Tiles = new List<List<GameObject>>();
     private List<GameObject> PlayableCharacters = new List<GameObject>();
@@ -49,6 +51,9 @@ public class GameManager : MonoBehaviour
     public GameObject UI;
     public Camera MainCamera;
 
+
+    private Bounds mapBounds;
+
     private Text GameAnnouncementText;
 
     private float time = 0;
@@ -58,7 +63,6 @@ public class GameManager : MonoBehaviour
     void Start()
     {
         GameAnnouncementText = UI.transform.Find("GameAnnouncement").GetComponent<Text>();
-        
         for (int i = 0; i < YSize; i++)
         {
             Tiles.Add(new List<GameObject>());
@@ -148,16 +152,56 @@ public class GameManager : MonoBehaviour
             if (gameState == GameState.CalculateAI)
             {
 
+                string s = "";
+
                 foreach (GameObject enemy in Enemies)
                 {
+                    s += enemy.name + " :\n";
+
+                    GameObject target = null;
+                    int minDistance = int.MaxValue;
+
+                    CalculDistanceTile(Tiles[enemy.GetComponent<EnemyCharacterScript>().X][enemy.GetComponent<EnemyCharacterScript>().Y]);
+
+                    for (int x = 0; x < XSize; x++)
+                    {
+                        for (int y = 0; y < YSize; y++)
+                        {
+                            if (Tiles[x][y].GetComponent<TileScript>().HasPlayer)
+                            {
+                                if (GetDistance(Tiles[x][y]) <= minDistance)
+                                {
+                                    minDistance = GetDistance(Tiles[x][y]);
+                                    target = Tiles[x][y];
+                                }
+                            }
+                        }
+                    }
+
+
+                    List<GameObject> path = CalculCheminTile(target);
                     
+                    foreach (GameObject g in path)
+                    {
+                        s += g.name + "\n";
+                    }
+                    
+                    enemy.GetComponent<EnemyCharacterScript>().Path = path;
+                    enemy.GetComponent<EnemyCharacterScript>().PathSaved = path;
+
                 }
-
-
-
-                gameTurn = Turn.Player;
-                gameState = GameState.TurnedChanged;
+                Debug.Log(s);
+                enemyMovedCount = NumberEnemies;
+                gameState = GameState.MoveAI;
             }
+
+            if (gameState == GameState.MoveAI)
+            {
+                if (enemyMovedCount < NumberEnemies)
+                {
+                }
+            }
+
         }
 
         if (gameTurn == Turn.Player)
@@ -211,7 +255,7 @@ public class GameManager : MonoBehaviour
                                 // Création du chemin
 
                                 // Initialisation Calcul Distance
-                                CalculDistance(OveringTile);
+                                CalculDistanceSelection(OveringTile);
 
                                 // Initialisation Calcul Chemin
                                 foreach (GameObject t in SelectionTiles)
@@ -219,7 +263,7 @@ public class GameManager : MonoBehaviour
                                     if (t.GetComponent<SelectionTileScript>().Actionnable())
                                     {
 
-                                        resultat = CalculChemin(t);
+                                        resultat = CalculCheminSelection(t);
                                         path = resultat;
                                         numberMovement = resultat.Count;
                                         foreach (GameObject tile in SelectionTiles)
@@ -304,11 +348,47 @@ public class GameManager : MonoBehaviour
                 Tiles[x].Add(tile);
             }
         }
+
+
+        mapBounds = new Bounds(Tiles[0][0].transform.position,Vector3.zero);
+
+        for (int x = 0; x < XSize; x++)
+        {
+            for (int y = 0; y < YSize; y++)
+            {
+
+                if (x + 1 <= XSize - 1)
+                {
+                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x + 1][y]);
+                }
+
+                if (x - 1 >= 0)
+                {
+                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x - 1][y]);
+                }
+
+                if (y + 1 <= YSize - 1)
+                {
+                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x][y + 1]);
+                }
+
+                if (y - 1 >= 0)
+                {
+                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x][y - 1]);
+                }
+
+                mapBounds.Encapsulate(Tiles[x][y].transform.position);
+            }
+        }
+
+        MainCamera.GetComponent<CameraScript>().SetCoordinates(mapBounds.center);
+        MainCamera.transform.position = new Vector3(mapBounds.center.x, mapBounds.center.y , -5);
+        MainCamera.orthographicSize = mapBounds.size.x / 1.5f;
     }
 
     private void SetUpPlayer()
     {
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < NumberPlayableCharacters; i++)
         {
             GameObject Playable = Instantiate(PlayableCharacterPreFab);
             PlayableCharacters.Add(Playable);
@@ -382,10 +462,10 @@ public class GameManager : MonoBehaviour
 
 
     /// <summary>
-    /// Calcule de la distance depuis une tile
+    /// Calcule de la distance depuis une tile de sélection
     /// </summary>
     /// <param name="tile"></param>
-    private void CalculDistance(GameObject tile)
+    private void CalculDistanceSelection(GameObject tile)
     {
         List<GameObject> aTraiter = new List<GameObject>();
         ResetDistance();
@@ -408,16 +488,9 @@ public class GameManager : MonoBehaviour
         }
     }
 
-    private List<GameObject> CalculChemin(GameObject StartTile)
+    private List<GameObject> CalculCheminSelection(GameObject StartTile)
     {
-        GameObject tileProcessing = null;
-        foreach (GameObject t in SelectionTiles)
-        {
-            if (t.GetComponent<SelectionTileScript>().Actionnable())
-            {
-                tileProcessing = t;
-            }
-        }
+        GameObject tileProcessing = StartTile;
 
         List<GameObject> resultat = new List<GameObject>();
 
@@ -440,6 +513,63 @@ public class GameManager : MonoBehaviour
 
         return resultat;
     }
+
+
+    /// <summary>
+    /// Calcule de la distance depuis une tile normal
+    /// </summary>
+    /// <param name="tile"></param>
+    private void CalculDistanceTile(GameObject tile)
+    {
+        List<GameObject> aTraiter = new List<GameObject>();
+        ResetDistance();
+        aTraiter.Add(tile);
+        SetDistance(tile, 0);
+
+        while (aTraiter.Count > 0)
+        {
+            GameObject tileEnCours = aTraiter[0];
+            aTraiter.RemoveAt(0);
+
+            foreach (GameObject t in tileEnCours.GetComponent<TileScript>().Voisins)
+            {
+                if (GetDistance(t) == -1)
+                {
+                    SetDistance(t, GetDistance(tileEnCours) + 1);
+                    aTraiter.Add(t);
+                }
+            }
+        }
+    }
+
+
+    private List<GameObject> CalculCheminTile(GameObject StartTile)
+    {
+        GameObject tileProcessing = StartTile;
+
+        List<GameObject> resultat = new List<GameObject>();
+
+        if (GetDistance(tileProcessing) != 0)
+        {
+            while (GetDistance(tileProcessing) > 0)
+            {
+                GameObject PreviousTile = null;
+                foreach (GameObject t in tileProcessing.GetComponent<TileScript>().Voisins)
+                {
+                    if (GetDistance(t) == GetDistance(tileProcessing) - 1)
+                    {
+                        PreviousTile = t;
+                    }
+                }
+                resultat.Add(PreviousTile);
+                tileProcessing = PreviousTile;
+            }
+        }
+
+        return resultat;
+    }
+
+
 
     private void DestroySelectionTile()
     {
@@ -601,14 +731,14 @@ public class GameManager : MonoBehaviour
             if (!tile.GetComponent<SelectionTileScript>().Actionnable())
             {
                 // Initialisation Calcul Distance
-                CalculDistance(tile);
+                CalculDistanceSelection(tile);
 
                 // Initialisation Calcul Chemin
                 foreach (GameObject Arrivee in SelectionTiles)
                 {
                     if (Arrivee.GetComponent<SelectionTileScript>().Actionnable())
                     {
-                        List<GameObject> chemin = CalculChemin(Arrivee);
+                        List<GameObject> chemin = CalculCheminSelection(Arrivee);
 
                         if (chemin.Count > 0)
                         {
@@ -841,7 +971,8 @@ public enum GameState
     IsCreatingSelectionTile,
     IsMovingPlayable,
     TurnedChanged,
-    CalculateAI
+    CalculateAI,
+    MoveAI
 }
 public enum PlayerState
 {

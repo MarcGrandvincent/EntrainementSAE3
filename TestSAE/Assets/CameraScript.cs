@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using System.Xml.Linq;
 using UnityEngine;
 
 public class CameraScript : MonoBehaviour
@@ -8,25 +9,42 @@ public class CameraScript : MonoBehaviour
     private float amnt;
     private float camPosY;
     private float camPosX;
+    private bool stopShake = false;
+    private bool stopDeplacement;
 
     // Start is called before the first frame update
     void Start()
     {
-        camPosX = transform.position.x;
-        camPosY = transform.position.y;
+        camPosX = 0;
+        camPosY = 0;
     }
 
     // Update is called once per frame
     void Update()
     {
-        float xNew = Mathf.Lerp(transform.position.x, camPosY, Time.deltaTime * 10);
-        transform.position = new Vector3(xNew, transform.position.y, transform.position.z);
+        if (stopShake && !stopDeplacement)
+        {
+            float xNew = Mathf.Lerp(transform.position.x, camPosY, Time.deltaTime * 10);
+            transform.position = new Vector3(xNew, transform.position.y, -5);
+            if (transform.position.x >= camPosX && transform.position.y >= camPosY)
+            {
+                transform.position = new Vector2(camPosX, camPosY);
+                stopDeplacement = true;
+            }
+        }
     }
 
 
 
+    public void SetCoordinates(Vector3 position)
+    {
+        camPosX = position.x;
+        camPosY = position.y;
+    }
+
     public void Shake(float amount, float time)
     {
+        stopShake = false;
         amnt = amount;
         InvokeRepeating("BeginShake", 0, 0.01f);
         Invoke("StopShake", time);
@@ -50,8 +68,10 @@ public class CameraScript : MonoBehaviour
 
     void StopShake()
     {
+        stopDeplacement = false;
         CancelInvoke("BeginShake");
         float xNew = Mathf.Lerp(transform.position.x, camPosX, Time.deltaTime * 10);
-        transform.position = new Vector3(xNew, camPosX, transform.position.z);
+        transform.position = new Vector3(xNew, camPosX, -5);
+        stopShake = true;
     }
 }

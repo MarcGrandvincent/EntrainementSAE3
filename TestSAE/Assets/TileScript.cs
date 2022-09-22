@@ -19,6 +19,9 @@ public class TileScript : MonoBehaviour
     private bool hasEnemy = false;
     public bool HasEnemy { get => hasEnemy; set => hasEnemy = value; }
 
+    private List<GameObject> voisins = new List<GameObject>();
+    public List<GameObject> Voisins { get => voisins; }
+
     // Start is called before the first frame update
     void Start()
     {
@@ -64,6 +67,11 @@ public class TileScript : MonoBehaviour
         {
             gameObject.GetComponent<Renderer>().material.color = new Color(gameObject.GetComponent<Renderer>().material.color.r, gameObject.GetComponent<Renderer>().material.color.g, gameObject.GetComponent<Renderer>().material.color.b, 1);
         }
+    }
+
+    public void AddVoisin(GameObject voisin)
+    {
+        voisins.Add(voisin);
     }
 }
 
