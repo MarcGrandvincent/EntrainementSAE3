@@ -36,6 +36,7 @@ public class GameManager : MonoBehaviour
 
     public List<List<GameObject>> Tiles = new List<List<GameObject>>();
     private List<GameObject> PlayableCharacters = new List<GameObject>();
+    private List<GameObject> Enemies = new List<GameObject>();
     private List<GameObject> SelectionTiles = new List<GameObject>();
     private List<GameObject> path = new List<GameObject>();
     private Dictionary<GameObject, int> distances = new Dictionary<GameObject, int>();
@@ -43,6 +44,7 @@ public class GameManager : MonoBehaviour
 
     public GameObject TilePrefab;
     public GameObject PlayableCharacterPreFab;
+    public GameObject EnemyCharacterPrefab;
     public GameObject SelectionTile;
     public GameObject UI;
     public Camera MainCamera;
@@ -86,7 +88,7 @@ public class GameManager : MonoBehaviour
                     GameAnnouncementText.text = "Player Turn";
                     GameAnnouncementText.color = new Color(0, 0, 1, 1);
                 }
-               // GameAnnouncementText.GetComponent<TextShakeScript>().SetCoordinateShake(GameAnnouncementText.transform.position.x, GameAnnouncementText.transform.position.y);
+                GameAnnouncementText.GetComponent<TextShakeScript>().SetCoordinateShake(GameAnnouncementText.transform.position.x, GameAnnouncementText.transform.position.y);
                 announcementState = AnnouncementState.isMovingStep1;
             }
 
@@ -97,8 +99,8 @@ public class GameManager : MonoBehaviour
                 if (GameAnnouncementText.transform.localScale.x <= 0.5f)
                 {
                     announcementState = AnnouncementState.isMovingStep2;
-                    MainCamera.GetComponent<CameraScript>().Shake(0.03f, 0.5f);
-                    //GameAnnouncementText.GetComponent<TextShakeScript>().Shake(0.000001f, 0.5f);
+                    MainCamera.GetComponent<CameraScript>().Shake(0.01f, 0.2f);
+                    GameAnnouncementText.GetComponent<TextShakeScript>().Shake(10f, 0.3f);
                 }
             }
 
@@ -139,6 +141,20 @@ public class GameManager : MonoBehaviour
         {
             if (gameState == GameState.Waiting)
             {
+                gameState = GameState.CalculateAI;
+
+            }
+
+            if (gameState == GameState.CalculateAI)
+            {
+
+                foreach (GameObject enemy in Enemies)
+                {
+                    
+                }
+
+
+
                 gameTurn = Turn.Player;
                 gameState = GameState.TurnedChanged;
             }
@@ -318,7 +334,28 @@ public class GameManager : MonoBehaviour
 
     private void SetUpEnemy()
     {
+        for (int i = 0; i < NumberEnemies; i++)
+        {
+            GameObject enemy = Instantiate(EnemyCharacterPrefab);
+            Enemies.Add(enemy);
+            enemy.name = "Enemy " + i;
+            bool valide = false;
 
+            while (!valide)
+            {
+                int xposition = UnityEngine.Random.Range(0, XSize);
+                int yposition = UnityEngine.Random.Range(YSize - YSize / 3, YSize);
+
+                if (Tiles[xposition][yposition].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition].GetComponent<TileScript>().HasEnemy)
+                {
+                    Tiles[xposition][yposition].GetComponent<TileScript>().HasEnemy = true;
+                    enemy.transform.position = new Vector3(xposition, yposition, -1);
+                    enemy.GetComponent<EnemyCharacterScript>().X = xposition;
+                    enemy.GetComponent<EnemyCharacterScript>().Y = yposition;
+                    valide = true;
+                }
+            }
+        }
     }
 
     private void SetDistance(GameObject Tile, int distance)
@@ -433,7 +470,7 @@ public class GameManager : MonoBehaviour
         {
             if (xposition <= XSize - 1 && xposition >= 0 && yposition + i + 1 <= YSize - 1 && yposition + i + 1 >= 0)
             {
-                if (Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().HasPlayer)
+                if (Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().HasPlayer && !Tiles[xposition][yposition + i + 1].GetComponent<TileScript>().HasEnemy)
                 {
                     GameObject SelectedTile = Instantiate(SelectionTile);
                     SelectedTile.transform.position = new Vector3(xposition, yposition + i + 1, -2);
@@ -451,7 +488,7 @@ public class GameManager : MonoBehaviour
         {
             if (xposition <= XSize - 1 && xposition >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
             {
-                if (Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
+                if (Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().HasPlayer && !Tiles[xposition][yposition - i - 1].GetComponent<TileScript>().HasEnemy)
                 {
                     GameObject SelectedTile2 = Instantiate(SelectionTile);
                     SelectedTile2.transform.position = new Vector3(xposition, yposition - i - 1, -2);
@@ -472,7 +509,7 @@ public class GameManager : MonoBehaviour
             {
                 if (xposition + j + 1 <= XSize - 1 && xposition + j + 1 >= 0 && yposition + i <= YSize - 1 && yposition + i >= 0)
                 {
-                    if (Tiles[xposition + j + 1][yposition + i].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition + i].GetComponent<TileScript>().HasPlayer)
+                    if (Tiles[xposition + j + 1][yposition + i].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition + i].GetComponent<TileScript>().HasPlayer && !Tiles[xposition + j + 1][yposition + i].GetComponent<TileScript>().HasEnemy)
                     {
                         GameObject SelectedTile3 = Instantiate(SelectionTile);
                         SelectedTile3.transform.position = new Vector3(xposition + j + 1, yposition + i, -2);
@@ -488,7 +525,7 @@ public class GameManager : MonoBehaviour
             {
                 if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition + i <= YSize - 1 && yposition + i >= 0)
                 {
-                    if (Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().HasPlayer)
+                    if (Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().HasPlayer && !Tiles[xposition - j - 1][yposition + i].GetComponent<TileScript>().HasEnemy)
                     {
                         GameObject SelectedTile4 = Instantiate(SelectionTile);
                         SelectedTile4.transform.position = new Vector3(xposition - j - 1, yposition + i, -2);
@@ -505,7 +542,7 @@ public class GameManager : MonoBehaviour
             {
                 if (xposition + j + 1 <= XSize - 1 && xposition + j + 1 >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
                 {
-                    if (Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
+                    if (Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer && !Tiles[xposition + j + 1][yposition - i - 1].GetComponent<TileScript>().HasEnemy)
                     {
                         GameObject SelectedTile5 = Instantiate(SelectionTile);
                         SelectedTile5.transform.position = new Vector3(xposition + j + 1, yposition - i - 1, -2);
@@ -521,7 +558,7 @@ public class GameManager : MonoBehaviour
             {
                 if (xposition - j - 1 <= XSize - 1 && xposition - j - 1 >= 0 && yposition - i - 1 <= YSize - 1 && yposition - i - 1 >= 0)
                 {
-                    if (Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer)
+                    if (Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().CanWalk && !Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().HasPlayer && !Tiles[xposition - j - 1][yposition - i - 1].GetComponent<TileScript>().HasEnemy)
                     {
                         GameObject SelectedTile6 = Instantiate(SelectionTile);
                         SelectedTile6.transform.position = new Vector3(xposition - j - 1, yposition - i - 1, -2);
@@ -803,7 +840,8 @@ public enum GameState
     Waiting, 
     IsCreatingSelectionTile,
     IsMovingPlayable,
-    TurnedChanged
+    TurnedChanged,
+    CalculateAI
 }
 public enum PlayerState
 {

@@ -7,7 +7,7 @@ public class TextShakeScript : MonoBehaviour
     private float amnt;
     private float textPosY;
     private float textPosX;
-    private bool shake = false;
+    private bool stopShake = false;
 
     // Start is called before the first frame update
     void Start()
@@ -17,10 +17,12 @@ public class TextShakeScript : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        if (shake)
+
+        if (stopShake)
         {
-            float xNew = Mathf.Lerp(transform.position.x, textPosY, Time.deltaTime * 10);
-            transform.position = new Vector3(xNew, transform.position.y, transform.position.z);
+            float xNew = Mathf.Lerp(transform.position.x, textPosX, Time.deltaTime * 30);
+            float yNew = Mathf.Lerp(transform.position.y, textPosY, Time.deltaTime * 30);
+            GetComponent<RectTransform>().transform.position = new Vector3(xNew, yNew, 0);
         }
     }
 
@@ -33,7 +35,7 @@ public class TextShakeScript : MonoBehaviour
 
     public void Shake(float amount, float time)
     {
-        shake = true;
+        stopShake = false;
         amnt = amount;
         InvokeRepeating("BeginShake", 0, 0.01f);
         Invoke("StopShake", time);
@@ -43,23 +45,26 @@ public class TextShakeScript : MonoBehaviour
     {
         if (amnt > 0)
         {
-            Vector3 textPos = transform.position;
 
-            float shakeAmtX = Random.value * amnt * .2f - amnt;
-            float shakeAmtY = Random.value * amnt * .2f - amnt;
+
+            Vector3 textPos = GetComponent<RectTransform>().transform.position;
+
+            float shakeAmtX = Random.value * amnt * 2f - amnt;
+            float shakeAmtY = Random.value * amnt * 2f - amnt;
 
             textPos.x += shakeAmtX;
             textPos.y += shakeAmtY;
 
-            transform.position = textPos;
+            GetComponent<RectTransform>().transform.position = textPos;
         }
     }
 
     void StopShake()
     {
-        shake = false;
+        stopShake = true;
         CancelInvoke("BeginShake");
-        float xNew = Mathf.Lerp(transform.position.x, textPosX, Time.deltaTime * 10);
-        transform.position = new Vector3(xNew, textPosX, transform.position.z);
+        //transform.position = new Vector3(textPosX, textPosY, 0);
+        //float xNew = Mathf.Lerp(GetComponent<RectTransform>().transform.position.x, textPosY, Time.deltaTime * 10);
+        //GetComponent<RectTransform>().transform.position = new Vector3(xNew, textPosX, textPosY);
     }
 }

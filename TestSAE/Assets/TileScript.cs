@@ -16,6 +16,9 @@ public class TileScript : MonoBehaviour
     private bool hasPlayer = false;
     public bool HasPlayer { get => hasPlayer; set => hasPlayer = value; }
 
+    private bool hasEnemy = false;
+    public bool HasEnemy { get => hasEnemy; set => hasEnemy = value; }
+
     // Start is called before the first frame update
     void Start()
     {
