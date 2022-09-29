@@ -28,7 +28,7 @@ public class EnemyCharacterScript : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        movement = maxMovement;
+        Movement = maxMovement;
     }
 
     // Update is called once per frame

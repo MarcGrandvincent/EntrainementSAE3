@@ -28,7 +28,7 @@ public class CameraScript : MonoBehaviour
             transform.position = new Vector3(xNew, transform.position.y, -5);
             if (transform.position.x >= camPosX && transform.position.y >= camPosY)
             {
-                transform.position = new Vector2(camPosX, camPosY);
+                transform.position = new Vector3(camPosX, camPosY,-5);
                 stopDeplacement = true;
             }
         }
@@ -61,6 +61,7 @@ public class CameraScript : MonoBehaviour
 
             camPos.x += shakeAmtX;
             camPos.y += shakeAmtY;
+            camPos.z = -5;
 
             transform.position = camPos;
         }

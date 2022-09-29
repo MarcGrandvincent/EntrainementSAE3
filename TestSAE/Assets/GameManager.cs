@@ -3,15 +3,19 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.Serialization;
+using System.Threading;
 using Unity.Mathematics;
+using Unity.PlasticSCM.Editor.WebApi;
 using UnityEditor;
 using UnityEditor.PackageManager.UI;
 using UnityEngine;
 using UnityEngine.Playables;
 using UnityEngine.UI;
 using UnityEngine.UIElements;
+using static UnityEngine.GraphicsBuffer;
 using static UnityEngine.Networking.UnityWebRequest;
 
 public class GameManager : MonoBehaviour
@@ -55,6 +59,7 @@ public class GameManager : MonoBehaviour
     private Bounds mapBounds;
 
     private Text GameAnnouncementText;
+    
 
     private float time = 0;
 
@@ -70,6 +75,7 @@ public class GameManager : MonoBehaviour
         SetUpTiles();
         SetUpPlayer();
         SetUpEnemy();
+        SetUpVoisin();
     }
 
     // Update is called once per frame
@@ -151,7 +157,7 @@ public class GameManager : MonoBehaviour
 
             if (gameState == GameState.CalculateAI)
             {
-
+                SetUpVoisin();
                 string s = "";
 
                 foreach (GameObject enemy in Enemies)
@@ -178,27 +184,178 @@ public class GameManager : MonoBehaviour
                         }
                     }
 
+                    Tiles[enemy.GetComponent<EnemyCharacterScript>().X][enemy.GetComponent<EnemyCharacterScript>().Y].GetComponent<TileScript>().HasEnemy = false;
 
-                    List<GameObject> path = CalculCheminTile(target);
-                    
-                    foreach (GameObject g in path)
+                    List<GameObject> pathTile = CalculCheminTile(target);
+                    pathTile.Reverse();
+
+                    Debug.Log(pathTile.Count);
+
+                    if (pathTile.Count <= enemy.GetComponent<EnemyCharacterScript>().MaxMovement - 1)
+                    {
+                        if (pathTile.Count != 0)
+                        {
+                            Tiles[(int)pathTile[pathTile.Count - 1].transform.position.x][(int)pathTile[pathTile.Count - 1].transform.position.y].GetComponent<TileScript>().HasEnemy = true;
+                        }
+                    }
+                    else
+                    {
+                        if (pathTile.Count > enemy.GetComponent<EnemyCharacterScript>().MaxMovement + 1)
+                        {
+                            Tiles[(int)pathTile[enemy.GetComponent<EnemyCharacterScript>().MaxMovement + 1].transform.position.x][(int)pathTile[enemy.GetComponent<EnemyCharacterScript>().MaxMovement + 1].transform.position.y].GetComponent<TileScript>().HasEnemy = true;
+                        }
+                        else
+                        {
+                            Tiles[(int)pathTile[enemy.GetComponent<EnemyCharacterScript>().MaxMovement].transform.position.x][(int)pathTile[enemy.GetComponent<EnemyCharacterScript>().MaxMovement].transform.position.y].GetComponent<TileScript>().HasEnemy = true;
+                        }
+                    }
+                
+
+
+                    foreach (GameObject g in pathTile)
                     {
                         s += g.name + "\n";
                     }
                     
-                    enemy.GetComponent<EnemyCharacterScript>().Path = path;
-                    enemy.GetComponent<EnemyCharacterScript>().PathSaved = path;
+                    enemy.GetComponent<EnemyCharacterScript>().Path = pathTile;
+                    enemy.GetComponent<EnemyCharacterScript>().PathSaved = pathTile;
 
                 }
+
+                string ss = "Has enemy :\n";
+                for (int x = 0; x < XSize; x++)
+                {
+                    for (int y = 0; y < YSize; y++)
+                    {
+                        if (Tiles[x][y].GetComponent<TileScript>().HasEnemy)
+                        {
+                            ss += Tiles[x][y].name + "\n";
+                        }
+                    }
+                }
+
                 Debug.Log(s);
-                enemyMovedCount = NumberEnemies;
+                Debug.Log(ss);
+                enemyMovedCount = 0;
+                foreach (GameObject e in Enemies)
+                {
+                    e.GetComponent<EnemyCharacterScript>().Movement = e.GetComponent<EnemyCharacterScript>().Movement = e.GetComponent<EnemyCharacterScript>().MaxMovement;
+                    e.GetComponent<EnemyCharacterScript>().Path.RemoveAt(0);
+                }
                 gameState = GameState.MoveAI;
             }
 
             if (gameState == GameState.MoveAI)
             {
-                if (enemyMovedCount < NumberEnemies)
+                if (enemyMovedCount != Enemies.Count)
                 {
+                    if (Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path.Count <= 0)
+                    {
+                        enemyMovedCount += 1;
+                    }
+                    else
+                    {
+                        if (Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x > Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().X)
+                        {
+                            if (Enemies[enemyMovedCount].transform.position.x < Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x)
+                            {
+                                Enemies[enemyMovedCount].transform.Translate(Vector3.right * 10f * Time.deltaTime);
+                            }
+                            else
+                            {
+                                Enemies[enemyMovedCount].transform.position = new Vector3(Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x, Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y, -2);
+                                Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().X = (int)Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x;
+                                Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Y = (int)Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y;
+
+                                if (Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Movement == 0 || Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path.Count == 0)
+                                {
+                                    enemyMovedCount += 1;
+                                }
+                                else
+                                {
+                                    Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path.RemoveAt(0);
+                                    Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Movement -= 1;
+                                }
+                            }
+
+                        }
+
+                        else if (Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x < Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().X)
+                        {
+                            if (Enemies[enemyMovedCount].transform.position.x > Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x)
+                            {
+                                Enemies[enemyMovedCount].transform.Translate(Vector3.left * 10f * Time.deltaTime);
+                            }
+                            else
+                            {
+                                Enemies[enemyMovedCount].transform.position = new Vector3(Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x, Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y, -2);
+                                Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().X = (int)Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x;
+                                Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Y = (int)Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y;
+
+                                if (Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Movement == 0 || Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path.Count == 0)
+                                {
+                                    enemyMovedCount += 1;
+                                }
+                                else
+                                {
+                                    Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path.RemoveAt(0);
+                                    Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Movement -= 1;
+                                }
+                            }
+                        }
+                        else if (Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y > Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Y)
+                        {
+                            if (Enemies[enemyMovedCount].transform.position.y < Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y)
+                            {
+                                Enemies[enemyMovedCount].transform.Translate(Vector3.up * 10f * Time.deltaTime);
+                            }
+                            else
+                            {
+                                Enemies[enemyMovedCount].transform.position = new Vector3(Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x, Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y, -2);
+                                Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().X = (int)Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x;
+                                Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Y = (int)Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y;
+
+                                if (Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Movement == 0 || Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path.Count == 0)
+                                {
+                                    enemyMovedCount += 1;
+                                }
+                                else
+                                {
+                                    Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path.RemoveAt(0);
+                                    Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Movement -= 1;
+                                }
+                            }
+                        }
+                        else if (Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y < Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Y)
+                        {
+                            if (Enemies[enemyMovedCount].transform.position.y > Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y)
+                            {
+                                Enemies[enemyMovedCount].transform.Translate(Vector3.down * 10f * Time.deltaTime);
+                            }
+                            else
+                            {
+                                Enemies[enemyMovedCount].transform.position = new Vector3(Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x, Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y, -2);
+                                Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().X = (int)Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.x;
+                                Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Y = (int)Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path[0].transform.position.y;
+
+                                if (Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Movement == 0 || Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path.Count == 0)
+                                {
+                                    enemyMovedCount += 1;
+                                }
+                                else
+                                {
+
+                                    Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Path.RemoveAt(0);
+                                    Enemies[enemyMovedCount].GetComponent<EnemyCharacterScript>().Movement -= 1;
+                                }
+                            }
+                        }
+                    }
+                }
+                else
+                {
+                    gameTurn = Turn.Player;
+                    gameState = GameState.TurnedChanged;
                 }
             }
 
@@ -349,40 +506,18 @@ public class GameManager : MonoBehaviour
             }
         }
 
-
-        mapBounds = new Bounds(Tiles[0][0].transform.position,Vector3.zero);
+        mapBounds = new Bounds(Tiles[0][0].transform.position, Vector3.zero);
 
         for (int x = 0; x < XSize; x++)
         {
             for (int y = 0; y < YSize; y++)
             {
-
-                if (x + 1 <= XSize - 1)
-                {
-                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x + 1][y]);
-                }
-
-                if (x - 1 >= 0)
-                {
-                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x - 1][y]);
-                }
-
-                if (y + 1 <= YSize - 1)
-                {
-                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x][y + 1]);
-                }
-
-                if (y - 1 >= 0)
-                {
-                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x][y - 1]);
-                }
-
                 mapBounds.Encapsulate(Tiles[x][y].transform.position);
             }
         }
 
         MainCamera.GetComponent<CameraScript>().SetCoordinates(mapBounds.center);
-        MainCamera.transform.position = new Vector3(mapBounds.center.x, mapBounds.center.y , -5);
+        MainCamera.transform.position = new Vector3(mapBounds.center.x, mapBounds.center.y, -5);
         MainCamera.orthographicSize = mapBounds.size.x / 1.5f;
     }
 
@@ -438,9 +573,52 @@ public class GameManager : MonoBehaviour
         }
     }
 
+    private void SetUpVoisin()
+    {
+
+        for (int x = 0; x < XSize; x++)
+        {
+            for (int y = 0; y < YSize; y++)
+            {
+                Tiles[x][y].GetComponent<TileScript>().Voisins.Clear();
+            }
+        }
+
+        for (int x = 0; x < XSize; x++)
+        {
+            for (int y = 0; y < YSize; y++)
+            {
+                if (x + 1 <= XSize - 1)
+                {
+                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x + 1][y]);
+                }
+
+                if (x - 1 >= 0)
+                {
+                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x - 1][y]);
+                }
+
+                if (y + 1 <= YSize - 1)
+                {
+                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x][y + 1]);
+                }
+
+                if (y - 1 >= 0)
+                {
+                    Tiles[x][y].GetComponent<TileScript>().AddVoisin(Tiles[x][y - 1]);
+                }
+            }
+        }
+    }
+
     private void SetDistance(GameObject Tile, int distance)
     {
         distances.Add(Tile, distance);
+    }
+
+    private void ModifyDistance(GameObject Tile, int distance)
+    {
+        distances[Tile] = distance;
     }
 
     private int GetDistance(GameObject Tile)
@@ -501,9 +679,12 @@ public class GameManager : MonoBehaviour
                 GameObject PreviousTile = null;
                 foreach (GameObject t in tileProcessing.GetComponent<SelectionTileScript>().Voisins)
                 {
-                    if (GetDistance(t) == GetDistance(tileProcessing) - 1)
+                    if (GetDistance(t) != -1)
                     {
-                        PreviousTile = t;
+                        if (GetDistance(t) == GetDistance(tileProcessing) - 1)
+                        {
+                            PreviousTile = t;
+                        }
                     }
                 }
                 resultat.Add(PreviousTile);
@@ -533,7 +714,7 @@ public class GameManager : MonoBehaviour
 
             foreach (GameObject t in tileEnCours.GetComponent<TileScript>().Voisins)
             {
-                if (GetDistance(t) == -1)
+                if (GetDistance(t) == -1 && t.GetComponent<TileScript>().CanWalk && !t.GetComponent<TileScript>().HasEnemy)
                 {
                     SetDistance(t, GetDistance(tileEnCours) + 1);
                     aTraiter.Add(t);
@@ -546,6 +727,7 @@ public class GameManager : MonoBehaviour
     private List<GameObject> CalculCheminTile(GameObject StartTile)
     {
         GameObject tileProcessing = StartTile;
+
 
         List<GameObject> resultat = new List<GameObject>();
 
@@ -561,6 +743,7 @@ public class GameManager : MonoBehaviour
                         PreviousTile = t;
                     }
                 }
+                
                 resultat.Add(PreviousTile);
                 tileProcessing = PreviousTile;
             }
